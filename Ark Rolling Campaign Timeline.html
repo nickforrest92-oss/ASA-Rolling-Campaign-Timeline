@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASA Server Timeline Tracker</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind for Inter font and custom colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'ark-dark': '#0f172a', // Slate-900
+                        'ark-blue': '#3b82f6', // Blue-500
+                        'ark-light': '#f1f5f9', // Slate-100
+                        'ark-accent': '#00BCD4', // Cyan-500
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* small screen css */
+        @media only screen and (max-width: 499px) {
+            body {
+                transform: scale(0.8);
+                position: absolute;
+                top: -50px;
+            }
+        }
+
+        /* Tracker Step Styling */
+        .tracker-circle {
+            width: 28px; /* h-7 */
+            height: 28px; /* w-7 */
+            border-radius: 50%;
+            border: 3px solid;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s ease;
+        }
+        .tracker-label {
+            position: absolute;
+            top: 150%;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            font-size: 0.875rem; /* text-sm */
+            text-align: center; /* Ensure multi-line text is centered */
+            transition: color 0.5s ease;
+        }
+        .progress-line {
+            margin-left: 14px;
+            margin-right: 14px;
+        }
+        .phase-tracker {
+            
+        }
+        body {
+            height: 100vh;
+
+        }
+        .top-container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            margin: 5%;
+        }
+        .timeline-container {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }        
+        .server-slot {
+            width: 6rem;
+        }
+        .map-thumbnail-element {
+            
+        }
+        /* Custom size and styling for the map icons */
+        .map-icon {
+            width: auto;
+            height: 10vh;
+            object-fit: cover;
+            border-radius: 8px; /* rounded-lg */
+            border: 2px solid;
+        }
+        .disabled-icon-container {
+            width: 10vh;
+            height: 10vh;
+            border-color: #ef4444;
+        }
+        .disabled-icon {
+            width: 8vh;
+            height: 8vh;
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body class="bg-ark-dark text-ark-light font-sans min-h-screen px-2 sm:p-8 overflow-x-hidden">
+
+    <div class="max-w-2xl mx-auto w-full">
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold text-ark-light tracking-tight">ASA Server Progression</h1>
+            <p class="text-ark-light/70 mt-2">Progressive timeline for four simultaneous servers.</p>
+            
+            <!-- Phase Tracker UI (Domino's Style) -->
+            <div class="mt-8 relative px-4 pb-12">
+                <!-- Progress Line Container -->
+                <div id="progress-line" class="progress-line absolute h-1 bg-gray-600 top-4 left-4 right-4 z-0">
+                    <div id="progress-fill" class="h-full bg-ark-accent transition-all duration-500 ease-in-out w-0 rounded-full"></div>
+                </div>
+
+                <!-- Tracker Steps (5 Major Phases) -->
+                <div id="phase-tracker" class="phase-tracker flex justify-between relative z-10">
+                    <!-- Steps will be injected by JavaScript -->
+                </div>
+            </div>
+             <!-- Controls -->
+        <div class="mt-6 flex justify-center">
+            <button id="advance-button" class="px-6 py-3 bg-ark-accent hover:bg-cyan-600 text-white font-semibold rounded-xl shadow-xl transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                Advance Phase
+            </button>
+        </div>
+
+        </header>
+
+        <!-- Timeline Grid -->
+        <div id="timeline-container" class="space-y-4">
+            <!-- Tiles will be inserted here by JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // Mapping of Map Names to their uploaded image file paths (Using local paths for testing)
+         const imageMap = {
+            "The Island": "Ark Map Icons/The Island.jpg",
+            "Scorched Earth": "Ark Map Icons/Scorched Earth.jpg",
+            "The Center": "Ark Map Icons/The Center.jpg",
+            "Aberration": "Ark Map Icons/Aberration.jpg",
+            "Ragnarök": "Ark Map Icons/Ragnarök.jpg",
+            "Extinction": "Ark Map Icons/Extinction.jpg",
+            "Valguero": "Ark Map Icons/Valguero.jpg",
+            "Genesis 1": "Ark Map Icons/Genesis 1.jpg",
+            "Fjordur": "Ark Map Icons/Fjordur.jpg",
+            "Genesis 2": "Ark Map Icons/Genesis 2.jpg",
+        };
+
+        // Server Progression Data
+        // Define common server configurations 
+        const P1_SURVIVE_SERVERS = { "Story 1": "The Island", "Story 2": "Disabled", "Non-Story 1": "Disabled", "Non-Story 2": "Disabled" };
+        const P1_ASCENSION_SERVERS = { "Story 1": "The Island", "Story 2": "Scorched Earth", "Non-Story 1": "The Center", "Non-Story 2": "Disabled" };
+        const P1_MIGRATION_SERVERS = { "Story 1": "The Island", "Story 2": "Scorched Earth", "Non-Story 1": "The Center", "Non-Story 2": "Disabled" };
+        
+        const P2_SURVIVE_SERVERS = { "Story 1": "Disabled", "Story 2": "Scorched Earth", "Non-Story 1": "The Center", "Non-Story 2": "Disabled" };
+        const P2_ASCENSION_SERVERS = { "Story 1": "Aberration", "Story 2": "Scorched Earth", "Non-Story 1": "The Center", "Non-Story 2": "Ragnarök" };
+        const P2_MIGRATION_SERVERS = { "Story 1": "Aberration", "Story 2": "Scorched Earth", "Non-Story 1": "The Center", "Non-Story 2": "Ragnarök" };
+        
+        const P3_SURVIVE_SERVERS = { "Story 1": "Aberration", "Story 2": "Disabled", "Non-Story 1": "Disabled", "Non-Story 2": "Ragnarök" };
+        const P3_ASCENSION_SERVERS = { "Story 1": "Aberration", "Story 2": "Extinction", "Non-Story 1": "Valguero", "Non-Story 2": "Ragnarök" };
+        const P3_MIGRATION_SERVERS = { "Story 1": "Aberration", "Story 2": "Extinction", "Non-Story 1": "Valguero", "Non-Story 2": "Ragnarök" };
+
+        const P4_SURVIVE_SERVERS = { "Story 1": "Disabled", "Story 2": "Extinction", "Non-Story 1": "Valguero", "Non-Story 2": "Disabled" };
+        const P4_ASCENSION_SERVERS = { "Story 1": "Genesis 1", "Story 2": "Extinction", "Non-Story 1": "Valguero", "Non-Story 2": "Fjordur" };
+        const P4_MIGRATION_SERVERS = { "Story 1": "Genesis 1", "Story 2": "Extinction", "Non-Story 1": "Valguero", "Non-Story 2": "Fjordur" };
+
+        const P5_SURVIVE_SERVERS = { "Story 1": "Genesis 1", "Story 2": "Disabled", "Non-Story 1": "Disabled", "Non-Story 2": "Fjordur" };
+        const P5_ASCENSION_SERVERS = { "Story 1": "Genesis 1", "Story 2": "Genesis 2", "Non-Story 1": "Disabled", "Non-Story 2": "Fjordur" };
+        const P5_MIGRATION_SERVERS = { "Story 1": "Genesis 1", "Story 2": "Genesis 2", "Non-Story 1": "Disabled", "Non-Story 2": "Fjordur" };
+
+        const P6_SURVIVE_SERVERS = { "Story 1": "Genesis 2", "Story 2": "Disabled", "Non-Story 1": "Disabled", "Non-Story 2": "Fjordur" };
+        const P6_ASCENSION_SERVERS = { "Story 1": "Genesis 2", "Story 2": "Disabled", "Non-Story 1": "Disabled", "Non-Story 2": "Fjordur" };
+        const P6_MIGRATION_SERVERS = { "Story 1": "Genesis 2", "Story 2": "Disabled", "Non-Story 1": "Disabled", "Non-Story 2": "Fjordur" };      
+
+        const timelineData = [
+            // Phase 1 (The Island --> Scorched Earth)
+            { phase: "1-A", subhead: "Survive & Thrive", servers: P1_SURVIVE_SERVERS },
+            { phase: "1-B", subhead: "Ascension", servers: P1_ASCENSION_SERVERS },
+            { phase: "1-C", subhead: "Migration", servers: P1_MIGRATION_SERVERS },
+
+            // Phase 2 (Scorched Earth --> Aberration)
+            { phase: "2-A", subhead: "Survive & Thrive", servers: P2_SURVIVE_SERVERS },
+            { phase: "2-B", subhead: "Ascension", servers: P2_ASCENSION_SERVERS },
+            { phase: "2-C", subhead: "Migration", servers: P2_MIGRATION_SERVERS },
+
+            // Phase 3 (Aberration --> Extinction)
+            { phase: "3-A", subhead: "Survive & Thrive", servers: P3_SURVIVE_SERVERS },
+            { phase: "3-B", subhead: "Ascension", servers: P3_ASCENSION_SERVERS },
+            { phase: "3-C", subhead: "Migration", servers: P3_MIGRATION_SERVERS },
+
+            // Phase 4 (Extinction --> Genesis 1)
+            { phase: "4-A", subhead: "Survive & Thrive", servers: P4_SURVIVE_SERVERS },
+            { phase: "4-B", subhead: "Ascension", servers: P4_ASCENSION_SERVERS },
+            { phase: "4-C", subhead: "Migration", servers: P4_MIGRATION_SERVERS },
+
+            // Phase 5 (Genesis 1 --> Genesis 2)
+            { phase: "5-A", subhead: "Survive & Thrive", servers: P5_SURVIVE_SERVERS },
+            { phase: "5-B", subhead: "Ascension", servers: P5_ASCENSION_SERVERS },
+            { phase: "5-C", subhead: "Migration", servers: P5_MIGRATION_SERVERS },
+
+            // Phase 6 (Genesis 2 --> Campaign End)
+            { phase: "6-A", subhead: "Survive & Thrive", servers: P6_SURVIVE_SERVERS },
+            { phase: "6-B", subhead: "Ascension", servers: P6_ASCENSION_SERVERS },
+            { phase: "6-C", subhead: "Campaign Complete", servers: P6_MIGRATION_SERVERS },
+        ];
+        // --- End of Timeline Data Update ---
+
+
+        // State variables
+        let currentPhaseIndex = 0; // x3 sub-phases per major phase - examples: "Phase 1-A" is 0 | "Phase 2-A" is 3)
+        const totalPhases = timelineData.length; 
+
+        // DOM Elements
+        const timelineContainer = document.getElementById('timeline-container');
+        const phaseTracker = document.getElementById('phase-tracker');
+        const progressFill = document.getElementById('progress-fill');
+        const advanceButton = document.getElementById('advance-button');
+
+        // Initial setup for the 6 tracker steps
+        function setupTrackerSteps() {
+            let trackerHtml = '';
+            for (let i = 1; i <= 7; i++) {
+                if (i < 7) {
+                    trackerHtml += `
+                        <div class="tracker-step relative flex flex-col items-center">
+                            <div id="step-${i}" class="tracker-circle border-gray-500 bg-ark-dark">
+                                <span class="text-sm font-bold text-gray-500">${i}</span>
+                            </div>
+                            <span id="label-${i}" class="tracker-label text-gray-500 font-semibold">${i}</span>
+                        </div>
+                    `;
+                }
+                else {
+                    trackerHtml += `
+                        <div class="tracker-step relative flex flex-col items-center">
+                            <div id="step-${i}" class="tracker-circle border-gray-500 bg-ark-dark">
+                                <span class="text-sm font-bold text-gray-500"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-flag-fill" viewBox="0 0 16 16">
+  <path d="M14.778.085A.5.5 0 0 1 15 .5V8a.5.5 0 0 1-.314.464L14.5 8l.186.464-.003.001-.006.003-.023.009a12 12 0 0 1-.397.15c-.264.095-.631.223-1.047.35-.816.252-1.879.523-2.71.523-.847 0-1.548-.28-2.158-.525l-.028-.01C7.68 8.71 7.14 8.5 6.5 8.5c-.7 0-1.638.23-2.437.477A20 20 0 0 0 3 9.342V15.5a.5.5 0 0 1-1 0V.5a.5.5 0 0 1 1 0v.282c.226-.079.496-.17.79-.26C4.606.272 5.67 0 6.5 0c.84 0 1.524.277 2.121.519l.043.018C9.286.788 9.828 1 10.5 1c.7 0 1.638-.23 2.437-.477a20 20 0 0 0 1.349-.476l.019-.007.004-.002h.001"/>
+</svg></span>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            phaseTracker.innerHTML = trackerHtml;
+        }
+
+        // Helper function to create the icon HTML (Image or Disabled SVG)
+        function getIconHtml(mapName) {
+            // Size of the map icon element
+            // Note: The sizing is handled by the CSS classes and inline styles based on viewport height (10vh)
+            
+            if (mapName === "Disabled") {
+                // Disabled Icon (Ban) - Red color
+                return `<div class="disabled-icon-container flex items-center justify-center rounded-lg border-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="disabled-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 14.14 14.14"/></svg>
+                        </div>`;
+            } else {
+                const imageUrl = imageMap[mapName];
+                const borderColor = 'border-ark-blue'; // Image icons get a blue border
+                const altText = `Icon for ${mapName} map`;
+                
+                // Ensure a red border fallback for debugging image loading errors
+                return `<img src="${imageUrl}" alt="${altText}" class="map-icon ${borderColor}" 
+                            onerror="this.onerror=null; this.src='https://placehold.co/115x115/64748b/ffffff?text=LOCAL'; this.classList.add('border-ark-accent');" 
+                        />`;
+            }
+        }
+
+        // Helper function to create the HTML for a single server tile
+        function getServerTileHtml(slotName, mapName) {
+            const isDisabled = mapName === "Disabled";
+            const mapTextClasses = isDisabled ? 'text-ark-accent italic text-xl' : 'text-ark-light font-semibold text-xl';
+            const tileClasses = isDisabled ? 'bg-ark-dark/50 border-gray-600' : 'bg-slate-800 border-ark-blue/50';
+
+            // Use the map name for the tooltip text as requested
+            return `
+                <div class="tile-container flex items-center p-4 rounded-xl shadow-lg border ${tileClasses}" title="${mapName}">
+                    <!-- Persistent Slot Label (Use flex-shrink-0 to maintain space for label) -->
+                    <div class="server-slot text-lg font-medium text-ark-light/80 mr-4 whitespace-nowrap flex-shrink-0">
+                        ${slotName}:
+                    </div>
+
+                    <!-- Icon Placeholder -->
+                    <div class="mr-4 flex-shrink-0">
+                        ${getIconHtml(mapName)}
+                    </div>
+
+                    <!-- Map Name / Status (Use flex-grow and min-w-0 for proportional scaling) -->
+                    <div class="text-left ${mapTextClasses} flex-grow min-w-0">
+                        ${mapName}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Function to update the visual tracker
+        function updateTracker() {
+            const currentData = timelineData[currentPhaseIndex];
+            
+            // Calculate progress percentage
+            const transitions = totalPhases; 
+            let progress;
+            
+            // final phase-B
+            if (currentPhaseIndex === (totalPhases-2)){
+                progress = (currentPhaseIndex / (transitions - 0.66)) * 100;
+                progressFill.style.width = `${progress}%`;
+            }
+            // final phase-C
+            else if (currentPhaseIndex === (totalPhases-1)){
+                progress = (currentPhaseIndex / (transitions - 1)) * 100;
+                progressFill.style.width = `${progress}%`;
+            }
+            else {
+                progress = (currentPhaseIndex / transitions) * 100;
+                progressFill.style.width = `${progress}%`;
+            }
+
+            // Current major phase (1-5), 3 sub-phases per major phase
+            const currentMajorPhase = Math.floor(currentPhaseIndex / 3) + 1;
+
+            for (let i = 1; i <= 6; i++) {
+                let circle = document.getElementById(`step-${i}`);
+                let label = document.getElementById(`label-${i}`);
+
+                // Reset classes for all elements
+                circle.classList.remove('border-ark-accent', 'bg-ark-accent', 'border-gray-500', 'bg-ark-dark', 'border-ark-light');
+                circle.firstElementChild.classList.remove('text-ark-light', 'text-ark-dark', 'text-gray-500');
+                label.classList.remove('text-ark-accent', 'text-ark-light', 'text-gray-500');
+
+                if (i < currentMajorPhase) {
+                    // Completed Phase
+                    circle.classList.add('border-ark-accent', 'bg-ark-accent');
+                    circle.firstElementChild.classList.add('text-ark-light');
+                    label.classList.add('text-ark-light');
+                    label.textContent = "";
+                } else if (i === currentMajorPhase) {
+                    // Active Phase - Display the full phase (e.g., Phase 3-B) and subhead (Migration)
+                    circle.classList.add('border-ark-accent', 'bg-ark-light');
+                    circle.firstElementChild.classList.add('text-ark-dark');
+                    label.classList.add('text-ark-accent', 'text-ark-light');
+
+                    // Inject multi-line HTML content for the active phase label
+                    label.innerHTML = `
+                        <div class="font-bold text-ark-light">${currentData.phase}</div>
+                        <div class="text-xs font-medium text-ark-accent">${currentData.subhead}</div>
+                    `;
+                } else {
+                    // Pending Phase
+                    circle.classList.add('border-gray-500', 'bg-ark-dark');
+                    circle.firstElementChild.classList.add('text-gray-500');
+                    label.classList.add('text-gray-500');
+                    label.textContent = "";
+                }                
+            }
+        }
+
+        // Main function to render the current phase data
+        function renderTimeline() {
+            
+            // 1. Update Phase Tracker UI
+            updateTracker();
+
+            // 2. Update Tiles (same as before)
+            let tilesHtml = '';
+            const currentData = timelineData[currentPhaseIndex];
+            
+            // The required vertical order of slots
+            const slotOrder = ["Story 1", "Story 2", "Non-Story 1", "Non-Story 2"];
+
+            slotOrder.forEach(slotName => {
+                const mapName = currentData.servers[slotName];
+                tilesHtml += getServerTileHtml(slotName, mapName);
+            });
+            
+            timelineContainer.innerHTML = tilesHtml;
+
+            // 3. Update Button State
+            if (currentPhaseIndex >= totalPhases - 1) {
+                advanceButton.textContent = "Campaign Complete!";
+                advanceButton.disabled = true;
+
+                circle = document.getElementById(`step-7`);
+
+                circle.classList.remove('border-ark-accent', 'bg-ark-accent', 'border-gray-500', 'bg-ark-dark', 'border-ark-light');
+                circle.firstElementChild.classList.remove('text-ark-light', 'text-ark-dark', 'text-gray-500');
+                
+                circle.classList.add('border-ark-accent', 'bg-ark-dark');
+                circle.firstElementChild.classList.add('text-ark-light');
+            }
+            else {
+                advanceButton.textContent = "Advance Phase";
+                advanceButton.disabled = false;
+            }
+
+            
+        }
+
+        // Function to advance to the next phase
+        function advancePhase() {
+            if (currentPhaseIndex < totalPhases) {
+                currentPhaseIndex++;
+                renderTimeline();
+            }
+        }
+
+        // Attach event listener
+        advanceButton.addEventListener('click', advancePhase);
+
+        // Initialize the timeline on load
+        window.onload = () => {
+            setupTrackerSteps(); // Create the 6 step elements
+            renderTimeline(); // Render initial state
+        };
+    </script>
+</body>
+</html>
