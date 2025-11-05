@@ -13,6 +13,7 @@
                 extend: {
                     colors: {
                         'ark-dark': '#0f172a', // Slate-900
+                        'ark-gray': '#4b5563', 
                         'ark-blue': '#3b82f6', // Blue-500
                         'ark-light': '#f1f5f9', // Slate-100
                         'ark-accent': '#00BCD4', // Cyan-500
@@ -94,12 +95,12 @@
         .disabled-icon-container {
             width: 10vh;
             height: 10vh;
-            border-color: #ef4444;
+            border-color: #4b5563;
         }
         .disabled-icon {
             width: 8vh;
             height: 8vh;
-            color: #ef4444;
+            color: #4b5563;
         }
     </style>
 </head>
@@ -107,12 +108,12 @@
 
     <div class="max-w-2xl mx-auto w-full">
         <!-- Header -->
-        <header class="text-center mb-10">
+        <header class="text-center mb-4">
             <h1 class="text-4xl font-extrabold text-ark-light tracking-tight">ASA Server Progression</h1>
             <p class="text-ark-light/70 mt-2">Progressive timeline for four simultaneous servers.</p>
             
             <!-- Phase Tracker UI (Domino's Style) -->
-            <div class="mt-8 relative px-4 pb-12">
+            <div class="mt-6 relative px-4 pb-12">
                 <!-- Progress Line Container -->
                 <div id="progress-line" class="progress-line absolute h-1 bg-gray-600 top-4 left-4 right-4 z-0">
                     <div id="progress-fill" class="h-full bg-ark-accent transition-all duration-500 ease-in-out w-0 rounded-full"></div>
@@ -123,38 +124,62 @@
                     <!-- Steps will be injected by JavaScript -->
                 </div>
             </div>
-             <!-- Controls -->
-        <div class="mt-6 flex justify-center">
-            <button id="advance-button" class="px-6 py-3 bg-ark-accent hover:bg-cyan-600 text-white font-semibold rounded-xl shadow-xl transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
-                Advance Phase
+             <!-- Controls: Three New Buttons -->
+        <div class="mt-4 flex justify-center space-x-4">
+            <button id="previous-button" title="Previous Phase" class="p-3 bg-ark-accent hover:bg-cyan-600 text-white font-semibold rounded-xl shadow-xl transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                <!-- Left Arrow (Block Triangle) -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 16.59 10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+            </button>
+
+            <button id="live-button" title="Current Phase" class="px-6 py-3 text-white font-semibold rounded-xl shadow-xl transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                Current Phase
+            </button>
+
+            <button id="next-button" title="Next Phase" class="p-3 bg-ark-accent hover:bg-cyan-600 text-white font-semibold rounded-xl shadow-xl transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                <!-- Right Arrow (Block Triangle) -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
             </button>
         </div>
 
+         <!-- Ascension Legend Placeholder (NEW) -->
+         <p id="ascension-legend-text" class="mt-4 text-center text-ark-accent text-sm font-medium h-5 transition-opacity duration-300 opacity-0 flex items-center justify-center">
+            <!-- Content injected here -->
+        </p>
+        <!-- Map Soon Disabled Legend Text Placeholder -->
+        <p id="legend-text" class="mt-2 text-center text-yellow-500 text-sm font-medium h-5 transition-opacity duration-300 opacity-0">
+            *Map will be disabled on next phase
+        </p>
+
         </header>
 
-        <!-- Timeline Grid -->
-        <div id="timeline-container" class="space-y-4">
-            <!-- Tiles will be inserted here by JavaScript -->
+        <!-- Timeline/SVG Wrapper -->
+        <div id="timeline-wrapper" class="relative">
+            <!-- Timeline Grid -->
+            <div id="timeline-container" class="space-y-4">
+                <!-- Tiles will be inserted here by JavaScript -->
+            </div>
+            <!-- SVG Overlay (Absolute positioning ensures it overlays perfectly) -->
+            <svg id="ascension-svg" class="absolute top-0 left-0 w-full h-full" style="pointer-events: none; z-index: 5;" xmlns="http://www.w3.org/2000/svg"></svg>
         </div>
     </div>
 
     <script>
         // Mapping of Map Names to their uploaded image file paths (Using local paths for testing)
          const imageMap = {
-            "The Island": "The Island.jpg",
-            "Scorched Earth": "Scorched Earth.jpg",
-            "The Center": "The Center.jpg",
-            "Aberration": "Aberration.jpg",
-            "Ragnarök": "Ragnarök.jpg",
-            "Extinction": "Extinction.jpg",
-            "Valguero": "Valguero.jpg",
-            "Genesis 1": "Genesis 1.jpg",
-            "Fjordur": "Fjordur.jpg",
-            "Genesis 2": "Genesis 2.jpg",
+            "The Island": "Ark Map Icons/The Island.jpg",
+            "Scorched Earth": "Ark Map Icons/Scorched Earth.jpg",
+            "The Center": "Ark Map Icons/The Center.jpg",
+            "Aberration": "Ark Map Icons/Aberration.jpg",
+            "Ragnarök": "Ark Map Icons/Ragnarök.jpg",
+            "Extinction": "Ark Map Icons/Extinction.jpg",
+            "Valguero": "Ark Map Icons/Valguero.jpg",
+            "Genesis 1": "Ark Map Icons/Genesis 1.jpg",
+            "Fjordur": "Ark Map Icons/Fjordur.jpg",
+            "Genesis 2": "Ark Map Icons/Genesis 2.jpg",
         };
 
-        // Server Progression Data
-        // Define common server configurations 
+        // --- Server Progression Data (Updated to 15 steps: A, B, C) ---
+        // Define common server configurations to simplify the new 15-step array
         const P1_SURVIVE_SERVERS = { "Story 1": "The Island", "Story 2": "Disabled", "Non-Story 1": "Disabled", "Non-Story 2": "Disabled" };
         const P1_ASCENSION_SERVERS = { "Story 1": "The Island", "Story 2": "Scorched Earth", "Non-Story 1": "The Center", "Non-Story 2": "Disabled" };
         const P1_MIGRATION_SERVERS = { "Story 1": "The Island", "Story 2": "Scorched Earth", "Non-Story 1": "The Center", "Non-Story 2": "Disabled" };
@@ -207,21 +232,30 @@
 
             // Phase 6 (Genesis 2 --> Campaign End)
             { phase: "6-A", subhead: "Survive & Thrive", servers: P6_SURVIVE_SERVERS },
-            { phase: "6-B", subhead: "Ascension", servers: P6_ASCENSION_SERVERS },
-            { phase: "6-C", subhead: "Campaign Complete", servers: P6_MIGRATION_SERVERS },
+            { phase: "6-B", subhead: "Final Boss", servers: P6_ASCENSION_SERVERS },
+            { phase: "End", subhead: "Campaign Complete", servers: P6_MIGRATION_SERVERS },
         ];
         // --- End of Timeline Data Update ---
 
 
         // State variables
         let currentPhaseIndex = 0; // x3 sub-phases per major phase - examples: "Phase 1-A" is 0 | "Phase 2-A" is 3)
-        const totalPhases = timelineData.length; 
+        const totalPhases = timelineData.length;
+        // New variable for the current "live" phase index (Phase 3-A is index 6)
+        let livePhaseIndex = 0; 
 
         // DOM Elements
         const timelineContainer = document.getElementById('timeline-container');
         const phaseTracker = document.getElementById('phase-tracker');
         const progressFill = document.getElementById('progress-fill');
-        const advanceButton = document.getElementById('advance-button');
+        
+        // New DOM references for the three buttons and legend
+        const previousButton = document.getElementById('previous-button');
+        const liveButton = document.getElementById('live-button');
+        const nextButton = document.getElementById('next-button');
+        const legendText = document.getElementById('legend-text');
+        const ascensionLegendText = document.getElementById('ascension-legend-text'); // NEW Reference
+        const ascensionSvg = document.getElementById('ascension-svg'); // SVG reference
 
         // Initial setup for the 6 tracker steps
         function setupTrackerSteps() {
@@ -233,7 +267,7 @@
                             <div id="step-${i}" class="tracker-circle border-gray-500 bg-ark-dark">
                                 <span class="text-sm font-bold text-gray-500">${i}</span>
                             </div>
-                            <span id="label-${i}" class="tracker-label text-gray-500 font-semibold">${i}</span>
+                            <span id="label-${i}" class="tracker-label text-gray-500 font-semibold"></span>
                         </div>
                     `;
                 }
@@ -241,10 +275,13 @@
                     trackerHtml += `
                         <div class="tracker-step relative flex flex-col items-center">
                             <div id="step-${i}" class="tracker-circle border-gray-500 bg-ark-dark">
-                                <span class="text-sm font-bold text-gray-500"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-flag-fill" viewBox="0 0 16 16">
-  <path d="M14.778.085A.5.5 0 0 1 15 .5V8a.5.5 0 0 1-.314.464L14.5 8l.186.464-.003.001-.006.003-.023.009a12 12 0 0 1-.397.15c-.264.095-.631.223-1.047.35-.816.252-1.879.523-2.71.523-.847 0-1.548-.28-2.158-.525l-.028-.01C7.68 8.71 7.14 8.5 6.5 8.5c-.7 0-1.638.23-2.437.477A20 20 0 0 0 3 9.342V15.5a.5.5 0 0 1-1 0V.5a.5.5 0 0 1 1 0v.282c.226-.079.496-.17.79-.26C4.606.272 5.67 0 6.5 0c.84 0 1.524.277 2.121.519l.043.018C9.286.788 9.828 1 10.5 1c.7 0 1.638-.23 2.437-.477a20 20 0 0 0 1.349-.476l.019-.007.004-.002h.001"/>
-</svg></span>
+                                <span class="text-sm font-bold text-gray-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-flag-fill" viewBox="0 0 16 16">
+                                        <path d="M14.778.085A.5.5 0 0 1 15 .5V8a.5.5 0 0 1-.314.464L14.5 8l.186.464-.003.001-.006.003-.023.009a12 12 0 0 1-.397.15c-.264.095-.631.223-1.047.35-.816.252-1.879.523-2.71.523-.847 0-1.548-.28-2.158-.525l-.028-.01C7.68 8.71 7.14 8.5 6.5 8.5c-.7 0-1.638.23-2.437.477A20 20 0 0 0 3 9.342V15.5a.5.5 0 0 1-1 0V.5a.5.5 0 0 1 1 0v.282c.226-.079.496-.17.79-.26C4.606.272 5.67 0 6.5 0c.84 0 1.524.277 2.121.519l.043.018C9.286.788 9.828 1 10.5 1c.7 0 1.638-.23 2.437-.477a20 20 0 0 0 1.349-.476l.019-.007.004-.002h.001"/>
+                                    </svg>
+                                </span>
                             </div>
+                            <span id="label-${i}" class="tracker-label text-gray-500 font-semibold"></span>
                         </div>
                     `;
                 }
@@ -253,18 +290,17 @@
         }
 
         // Helper function to create the icon HTML (Image or Disabled SVG)
-        function getIconHtml(mapName) {
-            // Size of the map icon element
-            // Note: The sizing is handled by the CSS classes and inline styles based on viewport height (10vh)
+        function getIconHtml(mapName, isDisabling) {
             
             if (mapName === "Disabled") {
-                // Disabled Icon (Ban) - Red color
+                // Disabled Icon (Ban) - Gray color
                 return `<div class="disabled-icon-container flex items-center justify-center rounded-lg border-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="disabled-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 14.14 14.14"/></svg>
                         </div>`;
             } else {
                 const imageUrl = imageMap[mapName];
-                const borderColor = 'border-ark-blue'; // Image icons get a blue border
+                // Use yellow-500 border if the map is about to be disabled
+                const borderColor = isDisabling ? 'border-yellow-500' : 'border-ark-blue'; 
                 const altText = `Icon for ${mapName} map`;
                 
                 // Ensure a red border fallback for debugging image loading errors
@@ -275,14 +311,42 @@
         }
 
         // Helper function to create the HTML for a single server tile
-        function getServerTileHtml(slotName, mapName) {
+        function getServerTileHtml(slotName, mapName, isDisabling) {
             const isDisabled = mapName === "Disabled";
-            const mapTextClasses = isDisabled ? 'text-ark-accent italic text-xl' : 'text-ark-light font-semibold text-xl';
-            const tileClasses = isDisabled ? 'bg-ark-dark/50 border-gray-600' : 'bg-slate-800 border-ark-blue/50';
+            
+            // 1. Determine Text Color
+            let mapTextClasses = 'text-xl';
+            if (isDisabled) {
+                mapTextClasses += ' text-ark-gray italic'; // Gray for fully disabled
+            } else if (isDisabling) {
+                mapTextClasses += ' text-yellow-500 font-semibold'; // Yellow for next-phase disabled
+            } else {
+                mapTextClasses += ' text-ark-light font-semibold'; // White for normal/active
+            }
+            
+            // 2. Determine Tile Background/Border (Base styling)
+            const baseTileClasses = isDisabled ? 'bg-ark-dark/50' : 'bg-slate-800';
 
-            // Use the map name for the tooltip text as requested
+            // 3. Final Border Adjustment (Override base border if disabling, else use base blue/gray)
+            const finalBorderClass = isDisabling ? 'border-yellow-500' : (isDisabled ? 'border-gray-600' : 'border-ark-blue/50');
+            
+            // 4. Determine Tooltip Text and Display Name
+            let tooltipText = mapName;
+            let displayMapName = mapName;
+            
+            if (isDisabling) {
+                // Append the required warning notice to the tooltip text
+                tooltipText += " - *will be disabled next phase";
+                // Append an asterisk to the map name displayed on the tile
+                displayMapName += '*';
+            }
+            
+            // Use the tooltipText for the title attribute
+            // Add a data attribute to identify story servers for arrow calculation
+            const storyAttribute = (slotName === "Story 1" || slotName === "Story 2") ? `data-slot="${slotName}"` : '';
+
             return `
-                <div class="tile-container flex items-center p-4 rounded-xl shadow-lg border ${tileClasses}" title="${mapName}">
+                <div class="tile-container flex items-center p-4 rounded-xl shadow-lg border ${baseTileClasses} ${finalBorderClass}" title="${tooltipText}" ${storyAttribute}>
                     <!-- Persistent Slot Label (Use flex-shrink-0 to maintain space for label) -->
                     <div class="server-slot text-lg font-medium text-ark-light/80 mr-4 whitespace-nowrap flex-shrink-0">
                         ${slotName}:
@@ -290,16 +354,91 @@
 
                     <!-- Icon Placeholder -->
                     <div class="mr-4 flex-shrink-0">
-                        ${getIconHtml(mapName)}
+                        ${getIconHtml(mapName, isDisabling)}
                     </div>
 
                     <!-- Map Name / Status (Use flex-grow and min-w-0 for proportional scaling) -->
                     <div class="text-left ${mapTextClasses} flex-grow min-w-0">
-                        ${mapName}
+                        ${displayMapName}
                     </div>
                 </div>
             `;
         }
+
+        // --- NEW FUNCTION: Draw Ascension Arrow ---
+        function drawAscensionArrow(sourceIndex, targetIndex, isRequired) {
+            const svg = document.getElementById('ascension-svg');
+            svg.innerHTML = ''; // Clear previous arrows
+
+            const tiles = document.querySelectorAll('#timeline-container .tile-container');
+
+            if (!tiles || tiles.length < 2) return;
+
+            const sourceTile = tiles[sourceIndex];
+            const targetTile = tiles[targetIndex];
+
+            const timelineRect = document.getElementById('timeline-container').getBoundingClientRect();
+            const sourceRect = sourceTile.getBoundingClientRect();
+            const targetRect = targetTile.getBoundingClientRect();
+
+            // Calculate Y centers relative to the SVG container (which overlays timeline-container)
+            // Y_coordinate = Tile_Top + (Tile_Height / 2) - Timeline_Container_Top_Offset
+            const Y_start = sourceRect.top + sourceRect.height / 2 - timelineRect.top;
+            const Y_end = targetRect.top + targetRect.height / 2 - timelineRect.top;
+
+            // X offset for the vertical line segment. Fixed value based on slot label width for a clean L-shape.
+            const X_exit = 100; 
+
+            // Define the path for the L-shaped arrow
+            const pathData = [
+                // Start: Horizontal segment begins 10px before the vertical drop
+                `M ${X_exit + 20} ${Y_start}`, 
+                // Horizontal segment 1 (small segment to the vertical line)
+                `L ${X_exit} ${Y_start}`,
+                // Vertical segment (down or up)
+                `L ${X_exit} ${Y_end}`,
+                // Horizontal segment 2 (into the target tile)
+                `L ${X_exit + 15} ${Y_end}`
+            ].join(' ');
+
+            const strokeColor = 'var(--tw-colors-ark-accent, #00BCD4)'; // ark-accent
+            const strokeWidth = 8;
+            // Dashed for 'B' (Ascension Available), Solid for 'C' (Migration Required)
+            const dashArray = isRequired ? '0' : '5, 10'; 
+
+            // Create the path element
+            const arrow = document.createElementNS("http://www.w3.org/2000/svg", 'path');
+            arrow.setAttribute('d', pathData);
+            arrow.setAttribute('stroke', strokeColor);
+            arrow.setAttribute('stroke-width', strokeWidth);
+            arrow.setAttribute('fill', 'none');
+            arrow.setAttribute('stroke-dasharray', dashArray);
+            arrow.setAttribute('stroke-linecap', 'round');
+            
+            // Create the arrowhead marker (reusable definition)
+            let marker = document.getElementById('arrowhead');
+            if (!marker) {
+                marker = document.createElementNS("http://www.w3.org/2000/svg", 'marker');
+                marker.setAttribute('id', 'arrowhead');
+                marker.setAttribute('viewBox', '0 0 10 10');
+                marker.setAttribute('refX', '5');
+                marker.setAttribute('refY', '5');
+                marker.setAttribute('markerWidth', '4');
+                marker.setAttribute('markerHeight', '4');
+                marker.setAttribute('orient', 'auto-start-reverse');
+                
+                const polygon = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
+                polygon.setAttribute('points', '5 2, 10 5, 5 8');
+                polygon.setAttribute('fill', strokeColor);
+                marker.appendChild(polygon);
+                svg.appendChild(marker);
+            }
+
+            // Apply marker to the path (points towards the target)
+            arrow.setAttribute('marker-end', 'url(#arrowhead)');
+            svg.appendChild(arrow);
+        }
+
         
         // Function to update the visual tracker
         function updateTracker() {
@@ -309,32 +448,52 @@
             const transitions = totalPhases; 
             let progress;
             
-            // final phase-B
-            if (currentPhaseIndex === (totalPhases-2)){
+            // Calculate progress line fill percentage
+            // Final Phase-B
+            if (currentPhaseIndex === (totalPhases - 2)){
                 progress = (currentPhaseIndex / (transitions - 0.66)) * 100;
-                progressFill.style.width = `${progress}%`;
             }
-            // final phase-C
-            else if (currentPhaseIndex === (totalPhases-1)){
+            // Final Phase-C
+            else if (currentPhaseIndex === (totalPhases - 1)){
                 progress = (currentPhaseIndex / (transitions - 1)) * 100;
-                progressFill.style.width = `${progress}%`;
             }
             else {
                 progress = (currentPhaseIndex / transitions) * 100;
-                progressFill.style.width = `${progress}%`;
             }
+            progressFill.style.width = `${progress}%`;
 
-            // Current major phase (1-5), 3 sub-phases per major phase
-            const currentMajorPhase = Math.floor(currentPhaseIndex / 3) + 1;
+            // Calculate major phases
+            let currentMajorPhase = Math.floor(currentPhaseIndex / 3) + 1;
+            const liveMajorPhase = Math.floor(livePhaseIndex / 3) + 1;
+            const finalMajorPhase = Math.floor(totalPhases / 3) + 1;
+            let isFinalPhase = false;
+            let finalCircle = document.getElementById(`step-${finalMajorPhase}`);
+            let finalLabel = document.getElementById(`label-${finalMajorPhase}`); 
 
             for (let i = 1; i <= 6; i++) {
                 let circle = document.getElementById(`step-${i}`);
                 let label = document.getElementById(`label-${i}`);
+                                   
 
-                // Reset classes for all elements
-                circle.classList.remove('border-ark-accent', 'bg-ark-accent', 'border-gray-500', 'bg-ark-dark', 'border-ark-light');
+                if(currentPhaseIndex === totalPhases - 1){
+                    currentMajorPhase++;
+                    isFinalPhase = true;
+                }
+
+                // Reset classes for all final element
+                finalCircle.classList.remove('border-ark-accent', 'bg-ark-accent', 'border-gray-500', 'bg-ark-dark', 'bg-ark-light', 'border-ark-light');
+                finalCircle.firstElementChild.classList.remove('text-ark-light', 'text-ark-dark', 'text-gray-500');                           
+                finalCircle.classList.add('border-gray-500', 'bg-ark-dark');
+                finalCircle.firstElementChild.classList.add('text-gray-500');
+                finalLabel.classList.remove('text-ark-accent', 'text-ark-light', 'text-gray-500');     
+                finalLabel.classList.add('text-gray-500');
+                finalLabel.textContent = "";
+
+                // Reset classes for all other elements
+                circle.classList.remove('border-ark-accent', 'bg-ark-accent', 'border-gray-500', 'bg-ark-dark', 'bg-ark-light', 'border-ark-light');
                 circle.firstElementChild.classList.remove('text-ark-light', 'text-ark-dark', 'text-gray-500');
                 label.classList.remove('text-ark-accent', 'text-ark-light', 'text-gray-500');
+                
 
                 if (i < currentMajorPhase) {
                     // Completed Phase
@@ -359,9 +518,72 @@
                     circle.firstElementChild.classList.add('text-gray-500');
                     label.classList.add('text-gray-500');
                     label.textContent = "";
-                }                
+                }
+                if (isFinalPhase) {
+                    circle = document.getElementById(`step-${i+1}`);
+                    circle.classList.remove('border-ark-accent', 'bg-ark-accent', 'border-gray-500', 'bg-ark-dark', 'bg-ark-light', 'border-ark-light');
+                    circle.classList.add('border-ark-accent', 'bg-ark-light');
+                    circle.firstElementChild.classList.add('text-ark-light');
+                    label = document.getElementById(`label-${i+1}`);
+                    label.classList.add('text-ark-accent', 'text-ark-light');
+
+                    // Inject multi-line HTML content for the active phase label
+                    label.innerHTML = `
+                        <div class="font-bold text-ark-light">${currentData.phase}</div>
+                        <div class="text-xs font-medium text-ark-accent">${currentData.subhead}</div>
+                    `;
+                }
+            }
+             
+            if (currentPhaseIndex != livePhaseIndex) {
+                let circle = document.getElementById(`step-${liveMajorPhase}`);
+                let label = document.getElementById(`label-${liveMajorPhase}`);
+                circle.classList.remove('border-ark-accent', 'bg-ark-accent', 'border-gray-500', 'bg-ark-dark', 'border-ark-light');
+                label.classList.remove('text-ark-accent', 'text-ark-light', 'text-gray-500');
+                circle.classList.add('border-ark-light', 'bg-ark-dark');
+                label.classList.add('text-ark-light');
             }
         }
+        
+        // New function to handle button states
+        function updateButtonStates() {
+            // Reset button classes
+            [previousButton, liveButton, nextButton].forEach(button => {
+                button.classList.remove('bg-ark-accent', 'bg-ark-gray', 'hover:bg-cyan-600', 'hover:bg-gray-500');
+                button.disabled = false;
+            });
+            
+            // Previous button logic
+            if (currentPhaseIndex === 0) {
+                previousButton.disabled = true;
+                previousButton.classList.add('bg-ark-gray', 'hover:bg-gray-500');
+            } else {
+                previousButton.classList.add('bg-ark-accent', 'hover:bg-cyan-600');
+            }
+
+            // Next button logic / Campaign Complete
+            if (currentPhaseIndex >= totalPhases - 1) {
+                nextButton.disabled = true;
+                nextButton.classList.add('bg-ark-gray', 'hover:bg-gray-500');
+            } else {
+                nextButton.classList.add('bg-ark-accent', 'hover:bg-cyan-600');
+                liveButton.textContent = "Current Phase";
+            }
+
+            // Live button logic (Color changes based on currentPhaseIndex vs livePhaseIndex)
+            if (currentPhaseIndex === livePhaseIndex) {
+                // Disabled style when already at the live phase
+                liveButton.classList.add('bg-ark-gray', 'hover:bg-gray-500');
+                liveButton.disabled = true;
+                liveButton.title = "Already viewing Live Phase"; 
+            } else {
+                // Accent color when not at the live phase
+                liveButton.classList.add('bg-ark-accent', 'hover:bg-cyan-600');
+                liveButton.disabled = false;
+                liveButton.title = "Jump to the Live Phase";
+            }
+        }
+
 
         // Main function to render the current phase data
         function renderTimeline() {
@@ -369,58 +591,173 @@
             // 1. Update Phase Tracker UI
             updateTracker();
 
-            // 2. Update Tiles (same as before)
+            // 2. Update Tiles 
             let tilesHtml = '';
             const currentData = timelineData[currentPhaseIndex];
-            
+            // Check if there is a next phase to compare against
+            const nextData = timelineData[currentPhaseIndex + 1];
+
             // The required vertical order of slots
             const slotOrder = ["Story 1", "Story 2", "Non-Story 1", "Non-Story 2"];
+            
+            // NEW FLAG: Track if any map in the current view is disabling
+            let isAnyMapDisabling = false;
 
             slotOrder.forEach(slotName => {
-                const mapName = currentData.servers[slotName];
-                tilesHtml += getServerTileHtml(slotName, mapName);
+                const currentMapName = currentData.servers[slotName];
+                let isDisabling = false;
+
+                if (nextData) {
+                    const nextMapName = nextData.servers[slotName];
+                    
+                    // The map is currently active (not Disabled) AND will be Disabled in the next phase
+                    if (currentMapName !== "Disabled" && nextMapName === "Disabled") {
+                        isDisabling = true;
+                        isAnyMapDisabling = true; // Set the flag
+                    }
+                }
+                
+                // Pass the isDisabling flag to the HTML generation function
+                tilesHtml += getServerTileHtml(slotName, currentMapName, isDisabling);
             });
             
             timelineContainer.innerHTML = tilesHtml;
 
             // 3. Update Button State
-            if (currentPhaseIndex >= totalPhases - 1) {
-                advanceButton.textContent = "Campaign Complete!";
-                advanceButton.disabled = true;
-
-                circle = document.getElementById(`step-7`);
-
-                circle.classList.remove('border-ark-accent', 'bg-ark-accent', 'border-gray-500', 'bg-ark-dark', 'border-ark-light');
-                circle.firstElementChild.classList.remove('text-ark-light', 'text-ark-dark', 'text-gray-500');
-                
-                circle.classList.add('border-ark-accent', 'bg-ark-dark');
-                circle.firstElementChild.classList.add('text-ark-light');
-            }
-            else {
-                advanceButton.textContent = "Advance Phase";
-                advanceButton.disabled = false;
-            }
-
+            updateButtonStates();
             
+            // 4. Update Legend Visibility
+            if (isAnyMapDisabling) {
+                legendText.classList.remove('opacity-0');
+                legendText.classList.add('opacity-100');
+            } else {
+                legendText.classList.remove('opacity-100');
+                legendText.classList.add('opacity-0');
+            }
+
+            // 5. Draw Ascension Arrow (NEW LOGIC)
+            let sourceIndex = -1;
+            let targetIndex = -1;
+            // Ascension is Available (-B) or Required (-C)
+            let isAscensionPhase = currentData.phase.endsWith('-B') || currentData.phase.endsWith('-C');
+            // Solid arrow if required (-C), dashed otherwise (-B)
+            let ascensionRequired = currentData.phase.endsWith('-C'); 
+
+            // The current major phase (1-6)
+            const majorPhase = Math.floor(currentPhaseIndex / 3) + 1;
+
+            if (isAscensionPhase && majorPhase <= 5) {
+                // Progression logic based on the timeline data (index 0=Story 1, index 1=Story 2)
+                switch (majorPhase) {
+                    case 1: // Island -> Scorched Earth (0 -> 1)
+                    case 3: // Aberration -> Extinction (0 -> 1)
+                    case 5: // Genesis 1 -> Genesis 2 (0 -> 1)
+                        sourceIndex = 0; // Story 1
+                        targetIndex = 1; // Story 2
+                        break;
+                    case 2: // Scorched Earth -> Aberration (1 -> 0)
+                    case 4: // Extinction -> Genesis 1 (1 -> 0)
+                        sourceIndex = 1; // Story 2
+                        targetIndex = 0; // Story 1
+                        break;
+                    default:
+                        sourceIndex = -1;
+                        break;
+                }
+
+                if (sourceIndex !== -1) {
+                    // Delay drawing slightly to ensure all DOM elements have rendered and bounds are correct
+                    // setTimeout(..., 0) pushes the execution to the next tick of the event loop.
+                    setTimeout(() => drawAscensionArrow(sourceIndex, targetIndex, ascensionRequired), 0);
+                } else {
+                    ascensionSvg.innerHTML = '';
+                }
+            } else {
+                // Clear SVG if not in an ascension phase
+                ascensionSvg.innerHTML = '';
+            }
+
+             //-----------------                
+            
+                const phaseSuffix = currentData.phase.slice(-2); // e.g., "-A", "-B", "-C"
+
+                if ((phaseSuffix === '-B' || phaseSuffix === '-C') && majorPhase < 6 ) {
+                    isAscensionActive = true;
+                    const ascendLegendisRequired = phaseSuffix === '-C';
+                    
+                    const dashArray = ascendLegendisRequired ? '0' : '5, 3'; // Smaller dash for inline legend
+                    
+                    
+                    // Construct the inline SVG for the legend
+                    // Note: Using `currentColor` for stroke color, which is inherited from the parent <p> element's text-ark-accent class.
+                        const inlineSvg = `
+                        <svg class="h-4 w-6 mr-2" viewBox="0 0 20 10" style="stroke: currentColor;">
+                            <line x1="0" y1="5" x2="20" y2="5" stroke-width="3" stroke-linecap="round" stroke-dasharray="${dashArray}" />
+                        </svg>
+                    `;
+                    
+                    
+                    if (ascendLegendisRequired) {
+                        ascensionLegendContent = `${inlineSvg} <span>Ascension <u>required</u> before end of phase</span>`;
+                    } 
+                    else {
+                        ascensionLegendContent = `${inlineSvg} <span>Ascension Available</span>`;
+                    }
+                }
+                else 
+                    isAscensionActive = false;
+
+                // Apply ascension legend visibility and content
+                if (isAscensionActive) {
+                    ascensionLegendText.innerHTML = ascensionLegendContent;
+                    ascensionLegendText.classList.remove('opacity-0');
+                    ascensionLegendText.classList.add('opacity-100');
+                    
+                    
+                } else {
+                    ascensionLegendText.innerHTML = '';
+                    ascensionLegendText.classList.remove('opacity-100');
+                    ascensionLegendText.classList.add('opacity-0');
+                    ascensionSvg.innerHTML = ''; // Clear main SVG
+                }
+
+                //-----------------
         }
 
-        // Function to advance to the next phase
-        function advancePhase() {
-            if (currentPhaseIndex < totalPhases) {
+        // Function to go back one phase
+        function previousPhase() {
+            if (currentPhaseIndex > 0) {
+                currentPhaseIndex--;
+                renderTimeline();
+            }
+        }
+        
+        // Function to jump to the current live phase
+        function jumpTolivePhaseIndex() {
+            currentPhaseIndex = livePhaseIndex;
+            renderTimeline();
+        }
+
+        // Function to advance to the next phase (Renamed from advancePhase)
+        function nextPhase() {
+            if (currentPhaseIndex < totalPhases - 1) {
                 currentPhaseIndex++;
                 renderTimeline();
             }
         }
 
-        // Attach event listener
-        advanceButton.addEventListener('click', advancePhase);
+        // Attach event listeners for the new buttons
+        previousButton.addEventListener('click', previousPhase);
+        liveButton.addEventListener('click', jumpTolivePhaseIndex);
+        nextButton.addEventListener('click', nextPhase);
 
         // Initialize the timeline on load
         window.onload = () => {
             setupTrackerSteps(); // Create the 6 step elements
+            // Start the view at the current live phase (index 6) for better visibility
+            currentPhaseIndex = livePhaseIndex;
             renderTimeline(); // Render initial state
         };
     </script>
 </body>
 </html>
-
