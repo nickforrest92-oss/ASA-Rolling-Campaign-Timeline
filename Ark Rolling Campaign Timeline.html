@@ -16,7 +16,9 @@
                         'ark-gray': '#4b5563', 
                         'ark-blue': '#3b82f6', // Blue-500
                         'ark-light': '#f1f5f9', // Slate-100
-                        'ark-accent': '#00BCD4', // Cyan-500
+                        'ark-accent': '#00BCD4', // Cyan-500 (Ascension Arrow Color)
+                        'ark-green': '#10b981', // Emerald-500 (Transfer Arrow Color)
+                        'ark-tile-bg': '#1e293b', // Slate-800
                     },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
@@ -37,8 +39,8 @@
 
         /* Tracker Step Styling */
         .tracker-circle {
-            width: 28px; /* h-7 */
-            height: 28px; /* w-7 */
+            width: 28px; 
+            height: 28px; 
             border-radius: 50%;
             border: 3px solid;
             display: flex;
@@ -53,61 +55,86 @@
             left: 50%;
             transform: translateX(-50%);
             white-space: nowrap;
-            font-size: 0.875rem; /* text-sm */
-            text-align: center; /* Ensure multi-line text is centered */
+            font-size: 0.875rem; 
+            text-align: center; 
             transition: color 0.5s ease;
         }
         .progress-line {
             margin-left: 14px;
             margin-right: 14px;
         }
-        .phase-tracker {
-            
-        }
         body {
             height: 100vh;
+        }
 
-        }
-        .top-container {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            margin: 5%;
-        }
-        .timeline-container {
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-        }        
-        .server-slot {
-            width: 6rem;
-        }
-        .map-thumbnail-element {
-            
-        }
-        /* Custom size and styling for the map icons */
+        /* --- Unified Server Slot Styling (Label + Tile) --- */
+        /* Icon Sizing (Reverted to ensure 8vh consistency) */
         .map-icon {
-            width: auto;
-            height: 10vh;
+            width: 8vh;
+            height: 8vh;
             object-fit: cover;
-            border-radius: 8px; /* rounded-lg */
+            border-radius: 8px; 
             border: 2px solid;
         }
         .disabled-icon-container {
-            width: 10vh;
-            height: 10vh;
-            border-color: #4b5563;
-        }
-        .disabled-icon {
             width: 8vh;
             height: 8vh;
+            border-color: #4b5563;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px; 
+            border: 2px solid;
+        }
+        .disabled-icon {
+            width: 6vh;
+            height: 6vh;
             color: #4b5563;
+        }
+        
+        /* Fixed height for all elements in the row to ensure vertical alignment */
+        /* Icon (8vh) + Padding (2rem total) = calc(8vh + 2rem) */
+        .server-element-height {
+            height: calc(8vh + 2rem); 
+        }
+
+        /* 1. Label Block Styling (Matches Tile outer styling) */
+        .server-slot-label-block {
+            width: 80px; 
+            min-width: 80px; /* Prevent shrinking */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            
+            border-radius: 0.75rem; /* rounded-xl */
+            border: 1px solid;
+        }
+
+        /* Rotated Text inside Label Block */
+        .vertical-label-text {
+            transform: rotate(-90deg); 
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-align: center;
+            white-space: no-wrap;
+            line-height: 1.2;
+            color: #f1f5f9;
+        }
+
+        /* 2. Tile Block Styling */
+        .tile-container {
+            padding: 1rem;
+            padding-left: 75px; 
+            width: 100%; /* Take up remaining space */
+            border-radius: 0.75rem;
+            border: 1px solid;
         }
     </style>
 </head>
 <body class="bg-ark-dark text-ark-light font-sans min-h-screen px-2 sm:p-8 overflow-x-hidden">
 
-    <div class="max-w-2xl mx-auto w-full">
+    <div class="max-w-xl mx-auto w-full">
         <!-- Header -->
         <header class="text-center mb-4">
             <h1 class="text-4xl font-extrabold text-ark-light tracking-tight">ASA Server Progression</h1>
@@ -120,7 +147,7 @@
                     <div id="progress-fill" class="h-full bg-ark-accent transition-all duration-500 ease-in-out w-0 rounded-full"></div>
                 </div>
 
-                <!-- Tracker Steps (5 Major Phases) -->
+                <!-- Tracker Steps (7 Major Phases: 6 steps + End) -->
                 <div id="phase-tracker" class="phase-tracker flex justify-between relative z-10">
                     <!-- Steps will be injected by JavaScript -->
                 </div>
@@ -142,10 +169,12 @@
             </button>
         </div>
 
-         <!-- Ascension Legend Placeholder (NEW) -->
-         <p id="ascension-legend-text" class="mt-4 text-center text-ark-accent text-sm font-medium h-5 transition-opacity duration-300 opacity-0 flex items-center justify-center">
-            <!-- Content injected here -->
-        </p>
+         <!-- Ascension & Transfer Legend Placeholder -->
+         <div id="combined-legend" class="mt-4 text-center text-sm font-medium h-5 transition-opacity duration-300 opacity-0 flex items-center justify-center space-x-6">
+            <p id="ascension-legend-text" class="text-ark-accent flex items-center"></p>
+            <p id="transfer-legend-text" class="text-ark-green flex items-center"></p>
+        </div>
+
         <!-- Map Soon Disabled Legend Text Placeholder -->
         <p id="legend-text" class="mt-2 text-center text-yellow-500 text-sm font-medium h-5 transition-opacity duration-300 opacity-0">
             *Map will be disabled on next phase
@@ -155,17 +184,18 @@
 
         <!-- Timeline/SVG Wrapper -->
         <div id="timeline-wrapper" class="relative">
-            <!-- Timeline Grid -->
-            <div id="timeline-container" class="space-y-4">
-                <!-- Tiles will be inserted here by JavaScript -->
-            </div>
+             <!-- The timeline container will now hold the full label+tile rows -->
+             <div id="timeline-container" class="mt-4 flex flex-col">
+                <!-- Rows will be inserted here by JavaScript -->
+             </div>
+            
             <!-- SVG Overlay (Absolute positioning ensures it overlays perfectly) -->
             <svg id="ascension-svg" class="absolute top-0 left-0 w-full h-full" style="pointer-events: none; z-index: 5;" xmlns="http://www.w3.org/2000/svg"></svg>
         </div>
     </div>
 
     <script>
-        // Mapping of Map Names to their uploaded image file paths (Using local paths for testing)
+        // Mapping of Map Names to their uploaded image file paths 
          const imageMap = {
             "The Island": "The Island.jpg",
             "Scorched Earth": "Scorched Earth.jpg",
@@ -178,32 +208,44 @@
             "Fjordur": "Fjordur.jpg",
             "Genesis 2": "Genesis 2.jpg",
         };
+        
+        // Tailwind Colors from config for use in JS/SVG
+        const colors = {
+            arkDark: '#0f172a', 
+            arkGray: '#4b5563', 
+            arkLight: '#f1f5f9', 
+            arkAccent: '#00BCD4', 
+            arkGreen: '#10b981', 
+            arkBlue: '#3b82f6',
+            arkTileBg: '#1e293b'
+        };
 
-        // --- Server Progression Data (Updated to 15 steps: A, B, C) ---
+
+        // --- Server Progression Data ---
         // Define common server configurations to simplify the new 15-step array
-        const P1_SURVIVE_SERVERS = { "Story 1": "The Island", "Story 2": "Disabled", "Non-Story 1": "Disabled", "Non-Story 2": "Disabled" };
-        const P1_ASCENSION_SERVERS = { "Story 1": "The Island", "Story 2": "Scorched Earth", "Non-Story 1": "The Center", "Non-Story 2": "Disabled" };
-        const P1_MIGRATION_SERVERS = { "Story 1": "The Island", "Story 2": "Scorched Earth", "Non-Story 1": "The Center", "Non-Story 2": "Disabled" };
+        const P1_SURVIVE_SERVERS = { "Story 1": "The Island", "Story 2": "Disabled", "Community 1": "Disabled", "Community 2": "Disabled" };
+        const P1_ASCENSION_SERVERS = { "Story 1": "The Island", "Story 2": "Scorched Earth", "Community 1": "The Center", "Community 2": "Disabled" };
+        const P1_MIGRATION_SERVERS = { "Story 1": "The Island", "Story 2": "Scorched Earth", "Community 1": "The Center", "Community 2": "Disabled" };
         
-        const P2_SURVIVE_SERVERS = { "Story 1": "Disabled", "Story 2": "Scorched Earth", "Non-Story 1": "The Center", "Non-Story 2": "Disabled" };
-        const P2_ASCENSION_SERVERS = { "Story 1": "Aberration", "Story 2": "Scorched Earth", "Non-Story 1": "The Center", "Non-Story 2": "Ragnarök" };
-        const P2_MIGRATION_SERVERS = { "Story 1": "Aberration", "Story 2": "Scorched Earth", "Non-Story 1": "The Center", "Non-Story 2": "Ragnarök" };
+        const P2_SURVIVE_SERVERS = { "Story 1": "Disabled", "Story 2": "Scorched Earth", "Community 1": "The Center", "Community 2": "Disabled" };
+        const P2_ASCENSION_SERVERS = { "Story 1": "Aberration", "Story 2": "Scorched Earth", "Community 1": "The Center", "Community 2": "Ragnarök" };
+        const P2_MIGRATION_SERVERS = { "Story 1": "Aberration", "Story 2": "Scorched Earth", "Community 1": "The Center", "Community 2": "Ragnarök" };
         
-        const P3_SURVIVE_SERVERS = { "Story 1": "Aberration", "Story 2": "Disabled", "Non-Story 1": "Disabled", "Non-Story 2": "Ragnarök" };
-        const P3_ASCENSION_SERVERS = { "Story 1": "Aberration", "Story 2": "Extinction", "Non-Story 1": "Valguero", "Non-Story 2": "Ragnarök" };
-        const P3_MIGRATION_SERVERS = { "Story 1": "Aberration", "Story 2": "Extinction", "Non-Story 1": "Valguero", "Non-Story 2": "Ragnarök" };
+        const P3_SURVIVE_SERVERS = { "Story 1": "Aberration", "Story 2": "Disabled", "Community 1": "Disabled", "Community 2": "Ragnarök" };
+        const P3_ASCENSION_SERVERS = { "Story 1": "Aberration", "Story 2": "Extinction", "Community 1": "Valguero", "Community 2": "Ragnarök" };
+        const P3_MIGRATION_SERVERS = { "Story 1": "Aberration", "Story 2": "Extinction", "Community 1": "Valguero", "Community 2": "Ragnarök" };
 
-        const P4_SURVIVE_SERVERS = { "Story 1": "Disabled", "Story 2": "Extinction", "Non-Story 1": "Valguero", "Non-Story 2": "Disabled" };
-        const P4_ASCENSION_SERVERS = { "Story 1": "Genesis 1", "Story 2": "Extinction", "Non-Story 1": "Valguero", "Non-Story 2": "Fjordur" };
-        const P4_MIGRATION_SERVERS = { "Story 1": "Genesis 1", "Story 2": "Extinction", "Non-Story 1": "Valguero", "Non-Story 2": "Fjordur" };
+        const P4_SURVIVE_SERVERS = { "Story 1": "Disabled", "Story 2": "Extinction", "Community 1": "Valguero", "Community 2": "Disabled" };
+        const P4_ASCENSION_SERVERS = { "Story 1": "Genesis 1", "Story 2": "Extinction", "Community 1": "Valguero", "Community 2": "Fjordur" };
+        const P4_MIGRATION_SERVERS = { "Story 1": "Genesis 1", "Story 2": "Extinction", "Community 1": "Valguero", "Community 2": "Fjordur" };
 
-        const P5_SURVIVE_SERVERS = { "Story 1": "Genesis 1", "Story 2": "Disabled", "Non-Story 1": "Disabled", "Non-Story 2": "Fjordur" };
-        const P5_ASCENSION_SERVERS = { "Story 1": "Genesis 1", "Story 2": "Genesis 2", "Non-Story 1": "Disabled", "Non-Story 2": "Fjordur" };
-        const P5_MIGRATION_SERVERS = { "Story 1": "Genesis 1", "Story 2": "Genesis 2", "Non-Story 1": "Disabled", "Non-Story 2": "Fjordur" };
+        const P5_SURVIVE_SERVERS = { "Story 1": "Genesis 1", "Story 2": "Disabled", "Community 1": "Disabled", "Community 2": "Fjordur" };
+        const P5_ASCENSION_SERVERS = { "Story 1": "Genesis 1", "Story 2": "Genesis 2", "Community 1": "Disabled", "Community 2": "Fjordur" };
+        const P5_MIGRATION_SERVERS = { "Story 1": "Genesis 1", "Story 2": "Genesis 2", "Community 1": "Disabled", "Community 2": "Fjordur" };
 
-        const P6_SURVIVE_SERVERS = { "Story 1": "Genesis 2", "Story 2": "Disabled", "Non-Story 1": "Disabled", "Non-Story 2": "Fjordur" };
-        const P6_ASCENSION_SERVERS = { "Story 1": "Genesis 2", "Story 2": "Disabled", "Non-Story 1": "Disabled", "Non-Story 2": "Fjordur" };
-        const P6_MIGRATION_SERVERS = { "Story 1": "Genesis 2", "Story 2": "Disabled", "Non-Story 1": "Disabled", "Non-Story 2": "Fjordur" };      
+        const P6_SURVIVE_SERVERS = { "Story 1": "Genesis 2", "Story 2": "Disabled", "Community 1": "Disabled", "Community 2": "Fjordur" };
+        const P6_ASCENSION_SERVERS = { "Story 1": "Genesis 2", "Story 2": "Disabled", "Community 1": "Disabled", "Community 2": "Fjordur" };
+        const P6_MIGRATION_SERVERS = { "Story 1": "Genesis 2", "Story 2": "Disabled", "Community 1": "Disabled", "Community 2": "Fjordur" };      
 
         const timelineData = [
             // Phase 1 (The Island --> Scorched Earth)
@@ -240,10 +282,9 @@
 
 
         // State variables
-        let currentPhaseIndex = 0; // x3 sub-phases per major phase - examples: "Phase 1-A" is 0 | "Phase 2-A" is 3)
+        let currentPhaseIndex = 0; 
         const totalPhases = timelineData.length;
-        // New variable for the current "live" phase index (Phase 3-A is index 6)
-        let livePhaseIndex = 0; 
+        let livePhaseIndex = 6; // Set initial live phase to Phase 3-A
 
         // DOM Elements
         const timelineContainer = document.getElementById('timeline-container');
@@ -255,37 +296,41 @@
         const liveButton = document.getElementById('live-button');
         const nextButton = document.getElementById('next-button');
         const legendText = document.getElementById('legend-text');
-        const ascensionLegendText = document.getElementById('ascension-legend-text'); // NEW Reference
+        
+        // References for the combined legend
+        const combinedLegendContainer = document.getElementById('combined-legend');
+        const ascensionLegendText = document.getElementById('ascension-legend-text');
+        const transferLegendText = document.getElementById('transfer-legend-text'); 
         const ascensionSvg = document.getElementById('ascension-svg'); // SVG reference
+        const labelColumn = document.getElementById('label-column'); // No longer needed, but keeping variable name convention
 
-        // Initial setup for the 6 tracker steps
+        // Initial setup for the 7 tracker steps
         function setupTrackerSteps() {
             let trackerHtml = '';
             for (let i = 1; i <= 7; i++) {
-                if (i < 7) {
-                    trackerHtml += `
-                        <div class="tracker-step relative flex flex-col items-center">
-                            <div id="step-${i}" class="tracker-circle border-gray-500 bg-ark-dark" onclick="jumpToClickedPhaseIndex(${i})">
-                                <span class="text-sm font-bold text-gray-500">${i}</span>
-                            </div>
-                            <span id="label-${i}" class="tracker-label text-gray-500 font-semibold"></span>
-                        </div>
+                // Determine if it's the final 'End' flag (Step 7)
+                const isFinalStep = (i === 7);
+                
+                let stepContent;
+                if (isFinalStep) {
+                    // Flag icon for the final step
+                    stepContent = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-flag-fill" viewBox="0 0 16 16">
+                            <path d="M14.778.085A.5.5 0 0 1 15 .5V8a.5.5 0 0 1-.314.464L14.5 8l.186.464-.003.001-.006.003-.023.009a12 12 0 0 1-.397.15c-.264.095-.631.223-1.047.35-.816.252-1.879.523-2.71.523-.847 0-1.548-.28-2.158-.525l-.028-.01C7.68 8.71 7.14 8.5 6.5 8.5c-.7 0-1.638.23-2.437.477A20 20 0 0 0 3 9.342V15.5a.5.5 0 0 1-1 0V.5a.5.5 0 0 1 1 0v.282c.226-.079.496-.17.79-.26C4.606.272 5.67 0 6.5 0c.84 0 1.524.277 2.121.519l.043.018C9.286.788 9.828 1 10.5 1c.7 0 1.638-.23 2.437-.477a20 20 0 0 0 1.349-.476l.019-.007.004-.002h.001"/>
+                        </svg>
                     `;
+                } else {
+                    stepContent = `<span class="text-sm font-bold text-gray-500">${i}</span>`;
                 }
-                else {
-                    trackerHtml += `
-                        <div class="tracker-step relative flex flex-col items-center">
-                            <div id="step-${i}" class="tracker-circle border-gray-500 bg-ark-dark" onclick="jumpToClickedPhaseIndex(${i})">
-                                <span class="text-sm font-bold text-gray-500">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-flag-fill" viewBox="0 0 16 16">
-                                        <path d="M14.778.085A.5.5 0 0 1 15 .5V8a.5.5 0 0 1-.314.464L14.5 8l.186.464-.003.001-.006.003-.023.009a12 12 0 0 1-.397.15c-.264.095-.631.223-1.047.35-.816.252-1.879.523-2.71.523-.847 0-1.548-.28-2.158-.525l-.028-.01C7.68 8.71 7.14 8.5 6.5 8.5c-.7 0-1.638.23-2.437.477A20 20 0 0 0 3 9.342V15.5a.5.5 0 0 1-1 0V.5a.5.5 0 0 1 1 0v.282c.226-.079.496-.17.79-.26C4.606.272 5.67 0 6.5 0c.84 0 1.524.277 2.121.519l.043.018C9.286.788 9.828 1 10.5 1c.7 0 1.638-.23 2.437-.477a20 20 0 0 0 1.349-.476l.019-.007.004-.002h.001"/>
-                                    </svg>
-                                </span>
-                            </div>
-                            <span id="label-${i}" class="tracker-label text-gray-500 font-semibold"></span>
+
+                trackerHtml += `
+                    <div class="tracker-step relative flex flex-col items-center">
+                        <div id="step-${i}" class="tracker-circle border-gray-500 bg-ark-dark" onclick="jumpToClickedPhaseIndex(${i})">
+                            ${stepContent}
                         </div>
-                    `;
-                }
+                        <span id="label-${i}" class="tracker-label text-gray-500 font-semibold"></span>
+                    </div>
+                `;
             }
             phaseTracker.innerHTML = trackerHtml;
         }
@@ -295,116 +340,152 @@
             
             if (mapName === "Disabled") {
                 // Disabled Icon (Ban) - Gray color
-                return `<div class="disabled-icon-container flex items-center justify-center rounded-lg border-2">
+                return `<div class="disabled-icon-container" style="border-color:${colors.arkGray}">
                             <svg xmlns="http://www.w3.org/2000/svg" class="disabled-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 14.14 14.14"/></svg>
                         </div>`;
             } else {
                 const imageUrl = imageMap[mapName];
                 // Use yellow-500 border if the map is about to be disabled
-                const borderColor = isDisabling ? 'border-yellow-500' : 'border-ark-blue'; 
+                const borderColor = isDisabling ? 'border-yellow-500' : 'border-ark-blue/50'; 
                 const altText = `Icon for ${mapName} map`;
                 
-                // Ensure a red border fallback for debugging image loading errors
-                return `<img src="${imageUrl}" alt="${altText}" class="map-icon ${borderColor}" 
-                            onerror="this.onerror=null; this.src='https://placehold.co/115x115/64748b/ffffff?text=LOCAL'; this.classList.add('border-ark-accent');" 
+                // Use custom colors for the border in the inline style for dynamic generation
+                return `<img src="${imageUrl}" alt="${altText}" class="map-icon" style="border-color: ${isDisabling ? 'rgb(234 179 8)' : 'rgba(59, 130, 246, 0.5)'}"
+                            onerror="this.onerror=null; this.src='https://placehold.co/8vhx8vh/64748b/ffffff?text=LOCAL'; this.style.borderColor='${colors.arkAccent}';" 
                         />`;
             }
         }
-
-        // Helper function to create the HTML for a single server tile
-        function getServerTileHtml(slotName, mapName, isDisabling) {
+        
+        // NEW Function to generate the combined label and tile row
+        function getServerRowHtml(slotName, mapName, isDisabling, slotIndex) {
             const isDisabled = mapName === "Disabled";
             
-            // 1. Determine Text Color
-            let mapTextClasses = 'text-xl';
+            // --- 1. Determine Shared Style Classes ---
+            let baseColorClass, finalBorderColor, finalBgColor;
+            
             if (isDisabled) {
-                mapTextClasses += ' text-ark-gray italic'; // Gray for fully disabled
+                // Disabled Style
+                finalBorderColor = colors.arkGray;
+                finalBgColor = colors.arkDark + '80'; // ark-dark/50 (using 80 for more visibility)
             } else if (isDisabling) {
-                mapTextClasses += ' text-yellow-500 font-semibold'; // Yellow for next-phase disabled
+                // Disabling Soon Style
+                finalBorderColor = 'rgb(234 179 8)'; // yellow-500
+                finalBgColor = colors.arkTileBg; 
             } else {
-                mapTextClasses += ' text-ark-light font-semibold'; // White for normal/active
+                // Active Style
+                finalBorderColor = colors.arkBlue + '80'; // ark-blue/50
+                finalBgColor = colors.arkTileBg;
             }
-            
-            // 2. Determine Tile Background/Border (Base styling)
-            const baseTileClasses = isDisabled ? 'bg-ark-dark/50' : 'bg-slate-800';
 
-            // 3. Final Border Adjustment (Override base border if disabling, else use base blue/gray)
-            const finalBorderClass = isDisabling ? 'border-yellow-500' : (isDisabled ? 'border-gray-600' : 'border-ark-blue/50');
+            // --- 2. Generate Label Block HTML ---
+            const [type, num] = slotName.split(' ');
+            const labelText = type + '\n' + num;
+
+            const labelBlockHtml = `
+                <div class="server-slot-label-block server-element-height" style="border-color: ${finalBorderColor}; background-color: ${finalBgColor};">
+                    <div class="vertical-label-text text-ark-light">
+                        ${labelText}
+                    </div>
+                </div>
+            `;
+
+
+            // --- 3. Generate Tile Block HTML ---
             
-            // 4. Determine Tooltip Text and Display Name
+            // Text color based on status
+            let mapTextClasses = 'text-xl flex-grow min-w-0';
             let tooltipText = mapName;
             let displayMapName = mapName;
-            
-            if (isDisabling) {
-                // Append the required warning notice to the tooltip text
+
+            if (isDisabled) {
+                mapTextClasses += ' text-ark-gray italic';
+            } else if (isDisabling) {
+                mapTextClasses += ' text-yellow-500 font-semibold';
                 tooltipText += " - *will be disabled next phase";
-                // Append an asterisk to the map name displayed on the tile
                 displayMapName += '*';
+            } else {
+                mapTextClasses += ' text-ark-light font-semibold';
             }
-            
-            // Use the tooltipText for the title attribute
-            // Add a data attribute to identify story servers for arrow calculation
-            const storyAttribute = (slotName === "Story 1" || slotName === "Story 2") ? `data-slot="${slotName}"` : '';
 
-            return `
-                <div class="tile-container flex items-center p-4 rounded-xl shadow-lg border ${baseTileClasses} ${finalBorderClass}" title="${tooltipText}" ${storyAttribute}>
-                    <!-- Persistent Slot Label (Use flex-shrink-0 to maintain space for label) -->
-                    <div class="server-slot text-lg font-medium text-ark-light/80 mr-4 whitespace-nowrap flex-shrink-0">
-                        ${slotName}:
-                    </div>
+            const slotAttribute = `data-slot-index="${slotIndex}"`;
 
+            const tileBlockHtml = `
+                <div class="tile-container server-element-height flex items-center shadow-lg" title="${tooltipText}" ${slotAttribute} style="border-color: ${finalBorderColor}; background-color: ${finalBgColor};">
                     <!-- Icon Placeholder -->
                     <div class="mr-4 flex-shrink-0">
                         ${getIconHtml(mapName, isDisabling)}
                     </div>
 
-                    <!-- Map Name / Status (Use flex-grow and min-w-0 for proportional scaling) -->
-                    <div class="text-left ${mapTextClasses} flex-grow min-w-0">
+                    <!-- Map Name / Status -->
+                    <div class="${mapTextClasses}">
                         ${displayMapName}
                     </div>
                 </div>
             `;
+            
+            // --- 4. Combine into Row ---
+            return `
+                <div class="server-slot-row flex items-start space-x-2 mb-4">
+                    ${labelBlockHtml}
+                    ${tileBlockHtml}
+                </div>
+            `;
         }
 
-        // --- NEW FUNCTION: Draw Ascension Arrow ---
-        function drawAscensionArrow(sourceIndex, targetIndex, isRequired) {
-            const svg = document.getElementById('ascension-svg');
-            svg.innerHTML = ''; // Clear previous arrows
 
+        // --- Draw Arrow Function (Minimal update for new alignment) ---
+        function drawArrow(sourceIndex, targetIndex, strokeColor, isRequired, arrowId) {
+            const svg = document.getElementById('ascension-svg');
+            
             const tiles = document.querySelectorAll('#timeline-container .tile-container');
 
-            if (!tiles || tiles.length < 2) return;
+            if (!tiles || tiles.length < 2 || sourceIndex < 0 || targetIndex < 0 || sourceIndex >= tiles.length || targetIndex >= tiles.length) return;
 
             const sourceTile = tiles[sourceIndex];
             const targetTile = tiles[targetIndex];
 
+            // Use the parent row element's position for accurate offset
             const timelineRect = document.getElementById('timeline-container').getBoundingClientRect();
-            const sourceRect = sourceTile.getBoundingClientRect();
-            const targetRect = targetTile.getBoundingClientRect();
+            const sourceRect = sourceTile.parentElement.getBoundingClientRect(); // Get row rect
+            const targetRect = targetTile.parentElement.getBoundingClientRect(); // Get row rect
 
-            // Calculate Y centers relative to the SVG container (which overlays timeline-container)
-            // Y_coordinate = Tile_Top + (Tile_Height / 2) - Timeline_Container_Top_Offset
+            // Calculate Y centers relative to the SVG container
             const Y_start = sourceRect.top + sourceRect.height / 2 - timelineRect.top;
             const Y_end = targetRect.top + targetRect.height / 2 - timelineRect.top;
 
-            // X offset for the vertical line segment. Fixed value based on slot label width for a clean L-shape.
-            const X_exit = 100; 
+            // X coordinates for the vertical line segment (relative to SVG's left edge (0,0))
+            // These coordinates fit within the new 80px label block area
+            const X_VERTICAL_ASCENSION = 20;  // Furthest left
+            const X_VERTICAL_TRANSFER1 = 40;  // Middle
+            const X_VERTICAL_TRANSFER2 = 60;  // Closest to the label block/tile
+            
+            // X_ENTRY: The entry point must be on the boundary between the 80px label block and the tile
+            // The label block is 80px, space-x-2 is 8px. The tile starts at 88px.
+            const X_ENTRY = 88; 
+
+            let X_VERTICAL;
+            if (arrowId === 'ascension') {
+                X_VERTICAL = X_VERTICAL_ASCENSION;
+            } else if (arrowId === 'transfer1') {
+                X_VERTICAL = X_VERTICAL_TRANSFER1; 
+            } else { // 'transfer2'
+                X_VERTICAL = X_VERTICAL_TRANSFER2; 
+            }
 
             // Define the path for the L-shaped arrow
             const pathData = [
-                // Start: Horizontal segment begins 10px before the vertical drop
-                `M ${X_exit + 20} ${Y_start}`, 
-                // Horizontal segment 1 (small segment to the vertical line)
-                `L ${X_exit} ${Y_start}`,
+                // Start: Horizontal segment begins at X_ENTRY (where label block ends)
+                `M ${X_ENTRY} ${Y_start}`, 
+                // Horizontal segment 1 (to the vertical line)
+                `L ${X_VERTICAL} ${Y_start}`,
                 // Vertical segment (down or up)
-                `L ${X_exit} ${Y_end}`,
-                // Horizontal segment 2 (into the target tile)
-                `L ${X_exit + 15} ${Y_end}`
+                `L ${X_VERTICAL} ${Y_end}`,
+                // Horizontal segment 2 (back into the target tile area)
+                `L ${X_ENTRY} ${Y_end}`
             ].join(' ');
 
-            const strokeColor = 'var(--tw-colors-ark-accent, #00BCD4)'; // ark-accent
             const strokeWidth = 8;
-            // Dashed for 'B' (Ascension Available), Solid for 'C' (Migration Required)
+            // Dashed for 'B' (Available), Solid for 'C' (Required)
             const dashArray = isRequired ? '0' : '5, 10'; 
 
             // Create the path element
@@ -416,11 +497,13 @@
             arrow.setAttribute('stroke-dasharray', dashArray);
             arrow.setAttribute('stroke-linecap', 'round');
             
-            // Create the arrowhead marker (reusable definition)
-            let marker = document.getElementById('arrowhead');
+            // Create the arrowhead marker (reusable definition, using unique ID for color)
+            const markerId = `${arrowId}-arrowhead`;
+            
+            let marker = document.getElementById(markerId);
             if (!marker) {
                 marker = document.createElementNS("http://www.w3.org/2000/svg", 'marker');
-                marker.setAttribute('id', 'arrowhead');
+                marker.setAttribute('id', markerId);
                 marker.setAttribute('viewBox', '0 0 10 10');
                 marker.setAttribute('refX', '5');
                 marker.setAttribute('refY', '5');
@@ -433,10 +516,14 @@
                 polygon.setAttribute('fill', strokeColor);
                 marker.appendChild(polygon);
                 svg.appendChild(marker);
+            } else {
+                // Ensure marker color is correct if the function is called multiple times
+                marker.querySelector('polygon').setAttribute('fill', strokeColor);
             }
 
             // Apply marker to the path (points towards the target)
-            arrow.setAttribute('marker-end', 'url(#arrowhead)');
+            arrow.setAttribute('marker-end', `url(#${markerId})`);
+            
             svg.appendChild(arrow);
         }
 
@@ -539,9 +626,11 @@
             if (currentPhaseIndex != livePhaseIndex) {
                 let circle = document.getElementById(`step-${liveMajorPhase}`);
                 let label = document.getElementById(`label-${liveMajorPhase}`);
-                circle.classList.remove('border-ark-accent', 'bg-ark-accent', 'border-gray-500', 'bg-ark-dark', 'border-ark-light');
+                circle.classList.remove('border-ark-accent', 'bg-ark-accent', 'border-gray-500', 'bg-ark-dark', 'border-ark-light', 'bg-ark-light');
+                circle.firstElementChild.classList.remove('text-ark-dark', 'text-ark-light', 'text-gray-500');
                 label.classList.remove('text-ark-accent', 'text-ark-light', 'text-gray-500');
                 circle.classList.add('border-ark-light', 'bg-ark-dark');
+                circle.firstElementChild.classList.add('text-ark-light');
                 label.classList.add('text-ark-light');
             }
         }
@@ -592,19 +681,18 @@
             // 1. Update Phase Tracker UI
             updateTracker();
 
-            // 2. Update Tiles 
-            let tilesHtml = '';
+            // 2. Update Tiles and Labels
+            let rowsHtml = '';
             const currentData = timelineData[currentPhaseIndex];
-            // Check if there is a next phase to compare against
             const nextData = timelineData[currentPhaseIndex + 1];
 
             // The required vertical order of slots
-            const slotOrder = ["Story 1", "Story 2", "Non-Story 1", "Non-Story 2"];
+            const slotOrder = ["Story 1", "Story 2", "Community 1", "Community 2"];
             
             // NEW FLAG: Track if any map in the current view is disabling
             let isAnyMapDisabling = false;
 
-            slotOrder.forEach(slotName => {
+            slotOrder.forEach((slotName, index) => {
                 const currentMapName = currentData.servers[slotName];
                 let isDisabling = false;
 
@@ -618,16 +706,16 @@
                     }
                 }
                 
-                // Pass the isDisabling flag to the HTML generation function
-                tilesHtml += getServerTileHtml(slotName, currentMapName, isDisabling);
+                rowsHtml += getServerRowHtml(slotName, currentMapName, isDisabling, index);
             });
             
-            timelineContainer.innerHTML = tilesHtml;
+            // Render the combined rows
+            timelineContainer.innerHTML = rowsHtml;
 
             // 3. Update Button State
             updateButtonStates();
             
-            // 4. Update Legend Visibility
+            // 4. Update Legend Visibility (Map Disabling)
             if (isAnyMapDisabling) {
                 legendText.classList.remove('opacity-0');
                 legendText.classList.add('opacity-100');
@@ -636,93 +724,139 @@
                 legendText.classList.add('opacity-0');
             }
 
-            // 5. Draw Ascension Arrow (NEW LOGIC)
-            let sourceIndex = -1;
-            let targetIndex = -1;
-            // Ascension is Available (-B) or Required (-C)
-            let isAscensionPhase = currentData.phase.endsWith('-B') || currentData.phase.endsWith('-C');
-            // Solid arrow if required (-C), dashed otherwise (-B)
-            let ascensionRequired = currentData.phase.endsWith('-C'); 
+            // 5. Draw Arrows & Update Legend (Ascension & Transfer)
+            
+            // Reset SVG and legend content
+            ascensionSvg.innerHTML = '';
+            ascensionLegendText.innerHTML = '';
+            transferLegendText.innerHTML = '';
+            combinedLegendContainer.classList.remove('opacity-100');
+            combinedLegendContainer.classList.add('opacity-0');
 
+            let isAscensionActive = false;
+            let isTransferActive = false;
+            
+            const currentPhase = currentData.phase;
+            const phaseSuffix = currentPhase.slice(-2); // e.g., "-A", "-B", "-C"
             // The current major phase (1-6)
             const majorPhase = Math.floor(currentPhaseIndex / 3) + 1;
+            const ascensionRequired = phaseSuffix === '-C'; 
 
-            if (isAscensionPhase && majorPhase <= 5) {
-                // Progression logic based on the timeline data (index 0=Story 1, index 1=Story 2)
+            if ((phaseSuffix === '-B' || phaseSuffix === '-C') && majorPhase <= 5) {
+                
+                // --- A. ASCENSION ARROW LOGIC (Character) ---
+                let ascSourceIndex = -1;
+                let ascTargetIndex = -1;
+                
+                // Ascension always goes from the PREVIOUS Story map to the NEW Story map.
                 switch (majorPhase) {
                     case 1: // Island -> Scorched Earth (0 -> 1)
                     case 3: // Aberration -> Extinction (0 -> 1)
                     case 5: // Genesis 1 -> Genesis 2 (0 -> 1)
-                        sourceIndex = 0; // Story 1
-                        targetIndex = 1; // Story 2
+                        ascSourceIndex = 0; // Story 1
+                        ascTargetIndex = 1; // Story 2
                         break;
                     case 2: // Scorched Earth -> Aberration (1 -> 0)
                     case 4: // Extinction -> Genesis 1 (1 -> 0)
-                        sourceIndex = 1; // Story 2
-                        targetIndex = 0; // Story 1
-                        break;
-                    default:
-                        sourceIndex = -1;
+                        ascSourceIndex = 1; // Story 2
+                        ascTargetIndex = 0; // Story 1
                         break;
                 }
 
-                if (sourceIndex !== -1) {
-                    // Delay drawing slightly to ensure all DOM elements have rendered and bounds are correct
-                    // setTimeout(..., 0) pushes the execution to the next tick of the event loop.
-                    setTimeout(() => drawAscensionArrow(sourceIndex, targetIndex, ascensionRequired), 0);
-                } else {
-                    ascensionSvg.innerHTML = '';
-                }
-            } else {
-                // Clear SVG if not in an ascension phase
-                ascensionSvg.innerHTML = '';
-            }
-
-             //-----------------                
-            
-                const phaseSuffix = currentData.phase.slice(-2); // e.g., "-A", "-B", "-C"
-
-                if ((phaseSuffix === '-B' || phaseSuffix === '-C') && majorPhase < 6 ) {
+                if (ascSourceIndex !== -1) {
                     isAscensionActive = true;
-                    const ascendLegendisRequired = phaseSuffix === '-C';
+                    // Draw Ascension Arrow (Cyan/ark-accent)
+                    setTimeout(() => drawArrow(ascSourceIndex, ascTargetIndex, colors.arkAccent, ascensionRequired, 'ascension'), 0);
+                }
+
+                // --- B. TRANSFER ARROW LOGIC (Tame/Item) ---
+                let transferSource1 = -1; // Story Map Source
+                let transferSource2 = -1; // Community Map Source
+                let transferTarget = -1;  // New Community Target
+
+                switch (majorPhase) {
+                    case 1: 
+                        // S1(0) transfers to NS1(2)
+                        transferSource1 = 0; 
+                        transferTarget = 2; 
+                        break;
+                    case 2:
+                        // S2(1) transfers to NS2(3)
+                        // NS1(2) transfers to NS2(3)
+                        transferSource1 = 1; 
+                        transferSource2 = 2; 
+                        transferTarget = 3;
+                        break;
+                    case 3:
+                        // S1(0) transfers to NS1(2)
+                        // NS2(3) transfers to NS1(2)
+                        transferSource1 = 0; 
+                        transferSource2 = 3; 
+                        transferTarget = 2;
+                        break;
+                    case 4:
+                        // S2(1) transfers to NS2(3)
+                        // NS1(2) transfers to NS2(3)
+                        transferSource1 = 1; 
+                        transferSource2 = 2; 
+                        transferTarget = 3;
+                        break;
+                    case 5:
+                        // No new Community map in 5-B/C
+                        break;
+                }
+
+                if (transferTarget !== -1) {
+                    isTransferActive = true;
+                    const transferColor = colors.arkGreen;
                     
-                    const dashArray = ascendLegendisRequired ? '0' : '5, 3'; // Smaller dash for inline legend
-                    
-                    
-                    // Construct the inline SVG for the legend
-                    // Note: Using `currentColor` for stroke color, which is inherited from the parent <p> element's text-ark-accent class.
-                        const inlineSvg = `
-                        <svg class="h-4 w-6 mr-2" viewBox="0 0 20 10" style="stroke: currentColor;">
-                            <line x1="0" y1="5" x2="20" y2="5" stroke-width="3" stroke-linecap="round" stroke-dasharray="${dashArray}" />
-                        </svg>
-                    `;
-                    
-                    
-                    if (ascendLegendisRequired) {
-                        ascensionLegendContent = `${inlineSvg} <span>Ascension <u>required</u> before end of phase</span>`;
-                    } 
-                    else {
-                        ascensionLegendContent = `${inlineSvg} <span>Ascension Available</span>`;
+                    // Draw Transfer Arrow 1 (Story Map Source)
+                    if (transferSource1 !== -1) {
+                        setTimeout(() => drawArrow(transferSource1, transferTarget, transferColor, ascensionRequired, 'transfer1'), 0);
+                    }
+                    // Draw Transfer Arrow 2 (Existing Community Source)
+                    if (transferSource2 !== -1) {
+                        setTimeout(() => drawArrow(transferSource2, transferTarget, transferColor, ascensionRequired, 'transfer2'), 0);
                     }
                 }
-                else 
-                    isAscensionActive = false;
+            }
 
-                // Apply ascension legend visibility and content
+
+            // --- C. COMBINED LEGEND GENERATION ---
+            const dashArray = ascensionRequired ? '0' : '5, 3'; // Same dash settings for legend SVG
+
+            if (isAscensionActive || isTransferActive) {
+                combinedLegendContainer.classList.remove('opacity-0');
+                combinedLegendContainer.classList.add('opacity-100');
+
+                // 1. Ascension Legend Content
                 if (isAscensionActive) {
-                    ascensionLegendText.innerHTML = ascensionLegendContent;
-                    ascensionLegendText.classList.remove('opacity-0');
-                    ascensionLegendText.classList.add('opacity-100');
+                    const ascColor = colors.arkAccent;
+                    const ascInlineSvg = `<svg class="h-4 w-6 mr-2" viewBox="0 0 20 10" style="stroke: ${ascColor};"><line x1="0" y1="5" x2="20" y2="5" stroke-width="3" stroke-linecap="round" stroke-dasharray="${dashArray}" /></svg>`;
                     
-                    
-                } else {
-                    ascensionLegendText.innerHTML = '';
-                    ascensionLegendText.classList.remove('opacity-100');
-                    ascensionLegendText.classList.add('opacity-0');
-                    ascensionSvg.innerHTML = ''; // Clear main SVG
+                    if (ascensionRequired) {
+                        ascensionLegendText.innerHTML = `${ascInlineSvg} <span>Ascension <u>required</u> before end of phase</span>`;
+                    } else {
+                        ascensionLegendText.innerHTML = `${ascInlineSvg} <span>Ascension Available</span>`;
+                    }
                 }
+                
+                // 2. Transfer Legend Content
+                if (isTransferActive) {
+                    const transColor = colors.arkGreen;
+                    const transInlineSvg = `<svg class="h-4 w-6 mr-2" viewBox="0 0 20 10" style="stroke: ${transColor};"><line x1="0" y1="5" x2="20" y2="5" stroke-width="3" stroke-linecap="round" stroke-dasharray="${dashArray}" /></svg>`;
 
-                //-----------------
+                    if (ascensionRequired) {
+                        transferLegendText.innerHTML = `${transInlineSvg} <span>Tame/Item Transfers <u>required</u> before end of phase</span>`;
+                    } else {
+                        transferLegendText.innerHTML = `${transInlineSvg} <span>Tame/Item Transfers Available</span>`;
+                    }
+                }
+            } else {
+                combinedLegendContainer.classList.remove('opacity-100');
+                combinedLegendContainer.classList.add('opacity-0');
+                ascensionSvg.innerHTML = ''; // Clear main SVG
+            }
         }
 
         // Function to go back one phase
@@ -763,7 +897,7 @@
 
         // Initialize the timeline on load
         window.onload = () => {
-            setupTrackerSteps(); // Create the 6 step elements
+            setupTrackerSteps(); // Create the 7 step elements
             // Start the view at the current live phase (index 6) for better visibility
             currentPhaseIndex = livePhaseIndex;
             renderTimeline(); // Render initial state
