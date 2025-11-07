@@ -870,7 +870,7 @@
                     const ascInlineSvg = `<svg class="h-4 w-6 mr-2" viewBox="0 0 20 10" style="stroke: ${ascColor};"><line x1="0" y1="5" x2="20" y2="5" stroke-width="3" stroke-linecap="round" stroke-dasharray="${dashArray}" /></svg>`;
                     
                     if (ascensionRequired) {
-                        ascensionLegendText.innerHTML = `${ascInlineSvg} <span>Ascension <u>required</u> phase end</span>`;
+                        ascensionLegendText.innerHTML = `${ascInlineSvg} <span>Ascension <u>required</u> by phase end</span>`;
                     } else {
                         ascensionLegendText.innerHTML = `${ascInlineSvg} <span>Ascension Available</span>`;
                     }
@@ -882,7 +882,7 @@
                     const transInlineSvg = `<svg class="h-4 w-6 mr-2" viewBox="0 0 20 10" style="stroke: ${transColor};"><line x1="0" y1="5" x2="20" y2="5" stroke-width="3" stroke-linecap="round" stroke-dasharray="${dashArray}" /></svg>`;
 
                     if (ascensionRequired) {
-                        transferLegendText.innerHTML = `${transInlineSvg} <span>Tame & Item Transfers <u>required</u> phase end</span>`;
+                        transferLegendText.innerHTML = `${transInlineSvg} <span>Tame & Item Transfers <u>required</u> by phase end</span>`;
                     } else {
                         transferLegendText.innerHTML = `${transInlineSvg} <span>Tame & Item Transfers Available</span>`;
                     }
