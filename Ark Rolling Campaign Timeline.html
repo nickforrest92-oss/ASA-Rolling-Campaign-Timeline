@@ -17,7 +17,6 @@
                         'ark-blue': '#3b82f6', // Blue-500
                         'ark-light': '#f1f5f9', // Slate-100
                         'ark-accent': '#00BCD4', // Cyan-500 (Ascension Arrow Color)
-                        'ark-green': '#10b981', // Emerald-500 (Transfer Arrow Color)
                         'ark-tile-bg': '#1e293b', // Slate-800
                     },
                     fontFamily: {
@@ -173,7 +172,7 @@
          <!-- Ascension & Transfer Legend Placeholder -->
          <div id="combined-legend" class="mt-4 text-center text-sm font-medium h-5 transition-opacity duration-300 opacity-0 flex items-center justify-center space-x-6">
             <p id="ascension-legend-text" class="text-ark-accent flex items-center"></p>
-            <p id="transfer-legend-text" class="text-ark-green flex items-center"></p>
+            <p id="transfer-legend-text" class="text-ark-blue flex items-center"></p>
         </div>
 
         <!-- Map Soon Disabled Legend Text Placeholder -->
@@ -191,7 +190,7 @@
              </div>
             
             <!-- SVG Overlay (Absolute positioning ensures it overlays perfectly) -->
-            <svg id="ascension-svg" class="absolute top-0 left-0 w-full h-full" style="pointer-events: none; z-index: 5;" xmlns="http://www.w3.org/2000/svg"></svg>
+            <svg id="ascension-migration-arrows-svg" class="absolute top-0 left-0 w-full h-full" style="pointer-events: none; z-index: 5;" xmlns="http://www.w3.org/2000/svg"></svg>
         </div>
     </div>
 
@@ -216,7 +215,6 @@
             arkGray: '#4b5563', 
             arkLight: '#f1f5f9', 
             arkAccent: '#00BCD4', 
-            arkGreen: '#10b981', 
             arkBlue: '#3b82f6',
             arkTileBg: '#1e293b'
         };
@@ -285,7 +283,7 @@
         // State variables
         let currentPhaseIndex = 0; 
         const totalPhases = timelineData.length;
-        let livePhaseIndex = 6; // Set initial live phase to Phase 3-A
+        let livePhaseIndex = 4; // Set initial live phase to Phase 3-A
 
         // DOM Elements
         const timelineContainer = document.getElementById('timeline-container');
@@ -302,7 +300,7 @@
         const combinedLegendContainer = document.getElementById('combined-legend');
         const ascensionLegendText = document.getElementById('ascension-legend-text');
         const transferLegendText = document.getElementById('transfer-legend-text'); 
-        const ascensionSvg = document.getElementById('ascension-svg'); // SVG reference
+        const ascensionSvg = document.getElementById('ascension-migration-arrows-svg'); // SVG reference
         const labelColumn = document.getElementById('label-column'); // No longer needed, but keeping variable name convention
 
         // Initial setup for the 7 tracker steps
@@ -436,7 +434,7 @@
 
         // --- Draw Arrow Function (Minimal update for new alignment) ---
         function drawArrow(sourceIndex, targetIndex, strokeColor, isRequired, arrowId) {
-            const svg = document.getElementById('ascension-svg');
+            const svg = document.getElementById('ascension-migration-arrows-svg');
             
             const tiles = document.querySelectorAll('#timeline-container .tile-container');
 
@@ -456,13 +454,13 @@
 
             // X coordinates for the vertical line segment (relative to SVG's left edge (0,0))
             // These coordinates fit within the new 80px label block area
-            const X_VERTICAL_ASCENSION = 20;  // Furthest left
-            const X_VERTICAL_TRANSFER1 = 40;  // Middle
-            const X_VERTICAL_TRANSFER2 = 60;  // Closest to the label block/tile
+            const X_VERTICAL_ASCENSION = 75;
+            const X_VERTICAL_TRANSFER1 = 75;
+            const X_VERTICAL_TRANSFER2 = 95;
             
             // X_ENTRY: The entry point must be on the boundary between the 80px label block and the tile
             // The label block is 80px, space-x-2 is 8px. The tile starts at 88px.
-            const X_ENTRY = 88; 
+            const X_ENTRY = 120; 
 
             let X_VERTICAL;
             if (arrowId === 'ascension') {
@@ -513,7 +511,7 @@
                 marker.setAttribute('orient', 'auto-start-reverse');
                 
                 const polygon = document.createElementNS("http://www.w3.org/2000/svg", 'polygon');
-                polygon.setAttribute('points', '5 2, 10 5, 5 8');
+                polygon.setAttribute('points', '2 2, 7 5, 2 8');
                 polygon.setAttribute('fill', strokeColor);
                 marker.appendChild(polygon);
                 svg.appendChild(marker);
@@ -744,33 +742,7 @@
             const ascensionRequired = phaseSuffix === '-C'; 
 
             if ((phaseSuffix === '-B' || phaseSuffix === '-C') && majorPhase <= 5) {
-                
-                // --- A. ASCENSION ARROW LOGIC (Character) ---
-                let ascSourceIndex = -1;
-                let ascTargetIndex = -1;
-                
-                // Ascension always goes from the PREVIOUS Story map to the NEW Story map.
-                switch (majorPhase) {
-                    case 1: // Island -> Scorched Earth (0 -> 1)
-                    case 3: // Aberration -> Extinction (0 -> 1)
-                    case 5: // Genesis 1 -> Genesis 2 (0 -> 1)
-                        ascSourceIndex = 0; // Story 1
-                        ascTargetIndex = 1; // Story 2
-                        break;
-                    case 2: // Scorched Earth -> Aberration (1 -> 0)
-                    case 4: // Extinction -> Genesis 1 (1 -> 0)
-                        ascSourceIndex = 1; // Story 2
-                        ascTargetIndex = 0; // Story 1
-                        break;
-                }
-
-                if (ascSourceIndex !== -1) {
-                    isAscensionActive = true;
-                    // Draw Ascension Arrow (Cyan/ark-accent)
-                    setTimeout(() => drawArrow(ascSourceIndex, ascTargetIndex, colors.arkAccent, ascensionRequired, 'ascension'), 0);
-                }
-
-                // --- B. TRANSFER ARROW LOGIC (Tame/Item) ---
+                // --- A. TRANSFER ARROW LOGIC (Tame & Item) ---
                 let transferSource1 = -1; // Story Map Source
                 let transferSource2 = -1; // Community Map Source
                 let transferTarget = -1;  // New Community Target
@@ -809,7 +781,7 @@
 
                 if (transferTarget !== -1) {
                     isTransferActive = true;
-                    const transferColor = colors.arkGreen;
+                    const transferColor = colors.arkBlue;
                     
                     // Draw Transfer Arrow 1 (Story Map Source)
                     if (transferSource1 !== -1) {
@@ -819,6 +791,31 @@
                     if (transferSource2 !== -1) {
                         setTimeout(() => drawArrow(transferSource2, transferTarget, transferColor, ascensionRequired, 'transfer2'), 0);
                     }
+                }
+
+                // --- B. ASCENSION ARROW LOGIC (Character) ---
+                let ascSourceIndex = -1;
+                let ascTargetIndex = -1;
+                
+                // Ascension always goes from the PREVIOUS Story map to the NEW Story map.
+                switch (majorPhase) {
+                    case 1: // Island -> Scorched Earth (0 -> 1)
+                    case 3: // Aberration -> Extinction (0 -> 1)
+                    case 5: // Genesis 1 -> Genesis 2 (0 -> 1)
+                        ascSourceIndex = 0; // Story 1
+                        ascTargetIndex = 1; // Story 2
+                        break;
+                    case 2: // Scorched Earth -> Aberration (1 -> 0)
+                    case 4: // Extinction -> Genesis 1 (1 -> 0)
+                        ascSourceIndex = 1; // Story 2
+                        ascTargetIndex = 0; // Story 1
+                        break;
+                }
+
+                if (ascSourceIndex !== -1) {
+                    isAscensionActive = true;
+                    // Draw Ascension Arrow (Cyan/ark-accent)
+                    setTimeout(() => drawArrow(ascSourceIndex, ascTargetIndex, colors.arkAccent, ascensionRequired, 'ascension'), 0);
                 }
             }
 
@@ -836,7 +833,7 @@
                     const ascInlineSvg = `<svg class="h-4 w-6 mr-2" viewBox="0 0 20 10" style="stroke: ${ascColor};"><line x1="0" y1="5" x2="20" y2="5" stroke-width="3" stroke-linecap="round" stroke-dasharray="${dashArray}" /></svg>`;
                     
                     if (ascensionRequired) {
-                        ascensionLegendText.innerHTML = `${ascInlineSvg} <span>Ascension <u>required</u> before end of phase</span>`;
+                        ascensionLegendText.innerHTML = `${ascInlineSvg} <span>Ascension <u>required</u> end of phase</span>`;
                     } else {
                         ascensionLegendText.innerHTML = `${ascInlineSvg} <span>Ascension Available</span>`;
                     }
@@ -844,13 +841,13 @@
                 
                 // 2. Transfer Legend Content
                 if (isTransferActive) {
-                    const transColor = colors.arkGreen;
+                    const transColor = colors.arkBlue;
                     const transInlineSvg = `<svg class="h-4 w-6 mr-2" viewBox="0 0 20 10" style="stroke: ${transColor};"><line x1="0" y1="5" x2="20" y2="5" stroke-width="3" stroke-linecap="round" stroke-dasharray="${dashArray}" /></svg>`;
 
                     if (ascensionRequired) {
-                        transferLegendText.innerHTML = `${transInlineSvg} <span>Tame/Item Transfers <u>required</u> before end of phase</span>`;
+                        transferLegendText.innerHTML = `${transInlineSvg} <span>Tame & Item Transfers <u>required</u> end of phase</span>`;
                     } else {
-                        transferLegendText.innerHTML = `${transInlineSvg} <span>Tame/Item Transfers Available</span>`;
+                        transferLegendText.innerHTML = `${transInlineSvg} <span>Tame & Item Transfers Available</span>`;
                     }
                 }
             } else {
